@@ -25,6 +25,7 @@ This is the isolated repository and future workspace for OpenClaw Finance Agent 
 - Do not overwrite issued documents or mutate completed audit events.
 - Keep currencies separate unless an explicitly approved conversion operation exists.
 - Use atomic writes and restrictive permissions for operational data.
+- On the Linux server, use `umask 077` for Git and all file-creating commands, then confirm no workspace entry grants group or other access.
 - Redact secrets and sensitive document content from logs and error messages.
 
 ## Phase workflow
@@ -34,4 +35,3 @@ Before each phase: read the build specification and prior completion report, ins
 ## Phase F1 status
 
 F1 establishes repository structure, schemas, tests, validation, and health reporting only. All operational feature flags remain disabled.
-

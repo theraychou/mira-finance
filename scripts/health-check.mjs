@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { access, readdir, stat } from 'node:fs/promises';
+import { access, lstat, readdir, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { runValidation, repositoryRoot } from './validate-config.mjs';
@@ -28,6 +28,29 @@ function check(name, status, detail) {
   return { name, status, detail };
 }
 
+async function auditWorkspaceTree(root) {
+  const permissionExceptions = [];
+  const symlinks = [];
+
+  async function walk(directory) {
+    for (const entry of await readdir(directory, { withFileTypes: true })) {
+      const candidate = path.join(directory, entry.name);
+      const metadata = await lstat(candidate);
+      const relative = path.relative(root, candidate).split(path.sep).join('/');
+
+      if ((metadata.mode & 0o077) !== 0) permissionExceptions.push(relative);
+      if (metadata.isSymbolicLink()) {
+        symlinks.push(relative);
+      } else if (metadata.isDirectory()) {
+        await walk(candidate);
+      }
+    }
+  }
+
+  await walk(root);
+  return { permissionExceptions, symlinks };
+}
+
 export async function runHealthCheck({ root = repositoryRoot, env = process.env } = {}) {
   const checks = [];
   const requiredFiles = ['README.md', 'AGENTS.md', 'SOUL.md', 'config/foundation.json'];
@@ -45,9 +68,23 @@ export async function runHealthCheck({ root = repositoryRoot, env = process.env 
 
   if (process.platform === 'linux') {
     const mode = (await stat(root)).mode & 0o777;
-    checks.push(check('workspace-permissions', mode === 0o700 ? 'PASS' : 'FAIL', `expected 0700, found 0${mode.toString(8)}`));
+    const treeAudit = await auditWorkspaceTree(root);
+    const privateTree = mode === 0o700 && treeAudit.permissionExceptions.length === 0;
+    checks.push(check(
+      'workspace-permissions',
+      privateTree ? 'PASS' : 'FAIL',
+      privateTree
+        ? 'root is 0700 and all descendants deny group/other access'
+        : `root mode 0${mode.toString(8)}; ${treeAudit.permissionExceptions.length} descendant permission exception(s)`
+    ));
+    checks.push(check(
+      'workspace-symlinks',
+      treeAudit.symlinks.length === 0 ? 'PASS' : 'FAIL',
+      treeAudit.symlinks.length === 0 ? 'no symlinks found' : `${treeAudit.symlinks.length} symlink(s) found`
+    ));
   } else {
     checks.push(check('workspace-permissions', 'SKIP', 'checked on the Linux deployment host'));
+    checks.push(check('workspace-symlinks', 'SKIP', 'checked on the Linux deployment host'));
   }
 
   const databasePresent = await exists(path.join(root, 'data', 'finance.sqlite3'));
@@ -76,4 +113,3 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   }
   if (!report.healthy) process.exitCode = 1;
 }
-
