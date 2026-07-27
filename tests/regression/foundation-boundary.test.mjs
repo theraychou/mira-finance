@@ -1,0 +1,49 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { access, readFile, readdir } from 'node:fs/promises';
+import path from 'node:path';
+import { repositoryRoot } from '../../scripts/validate-config.mjs';
+
+async function exists(relative) {
+  try {
+    await access(path.join(repositoryRoot, relative));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+test('all later-phase feature flags remain disabled', async () => {
+  const foundation = JSON.parse(await readFile(path.join(repositoryRoot, 'config/foundation.json'), 'utf8'));
+  assert.deepEqual(foundation.features, {
+    database: false,
+    documentGeneration: false,
+    googleDrive: false,
+    whatsApp: false
+  });
+});
+
+test('no database or document templates exist in Phase F1', async () => {
+  assert.equal(await exists('data/finance.sqlite3'), false);
+  const currencies = ['myr', 'sgd', 'usd'];
+  for (const currency of currencies) {
+    const directory = path.join(repositoryRoot, 'templates', currency);
+    const files = await readdir(directory);
+    assert.equal(files.some((name) => /\.(docx|dotx)$/i.test(name)), false);
+  }
+});
+
+test('source specification and sensitive runtime files are ignored', async () => {
+  const ignore = await readFile(path.join(repositoryRoot, '.gitignore'), 'utf8');
+  for (const required of [
+    'OpenClaw_Finance_Agent.docx',
+    'config/bank-profiles.json',
+    'config/drive-folders.json',
+    'data/*.sqlite3',
+    'templates/**/*.docx',
+    '.env'
+  ]) {
+    assert.ok(ignore.includes(required), `missing ignore rule: ${required}`);
+  }
+});
+

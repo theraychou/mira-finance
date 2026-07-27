@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "logging.schema.json",
+  "title": "Mira Finance foundation logging configuration",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["directory", "format", "redactSecrets"],
+  "properties": {
+    "directory": {"type": "string", "const": "logs"},
+    "format": {"type": "string", "const": "jsonl"},
+    "redactSecrets": {"type": "boolean", "const": true}
+  }
+}
+

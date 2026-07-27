@@ -1,0 +1,17 @@
+{
+  "name": "mira-finance",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Isolated OpenClaw Finance Agent workspace foundation",
+  "type": "module",
+  "engines": {
+    "node": ">=22 <25"
+  },
+  "scripts": {
+    "validate:config": "node scripts/validate-config.mjs",
+    "health": "node scripts/health-check.mjs",
+    "health:json": "node scripts/health-check.mjs --json",
+    "test": "node --test tests/unit/*.test.mjs tests/integration/*.test.mjs tests/regression/*.test.mjs"
+  }
+}
+

@@ -1,0 +1,31 @@
+{
+  "$schema": "../schemas/config/foundation.schema.json",
+  "schemaVersion": 1,
+  "project": {
+    "agentId": "mira-finance",
+    "displayName": "Mira",
+    "phase": "F1"
+  },
+  "workspace": {
+    "path": "/root/.workspaces/mira-finance",
+    "isolation": "dedicated-workspace"
+  },
+  "features": {
+    "database": false,
+    "documentGeneration": false,
+    "googleDrive": false,
+    "whatsApp": false
+  },
+  "logging": {
+    "directory": "logs",
+    "format": "jsonl",
+    "redactSecrets": true
+  },
+  "optionalIntegrations": {
+    "database": "not-configured",
+    "documentTemplates": "not-configured",
+    "googleDrive": "not-configured",
+    "whatsApp": "not-configured"
+  }
+}
+

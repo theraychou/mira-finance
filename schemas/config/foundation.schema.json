@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "foundation.schema.json",
+  "title": "Mira Finance foundation configuration",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$schema",
+    "schemaVersion",
+    "project",
+    "workspace",
+    "features",
+    "logging",
+    "optionalIntegrations"
+  ],
+  "properties": {
+    "$schema": {
+      "const": "../schemas/config/foundation.schema.json"
+    },
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "project": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["agentId", "displayName", "phase"],
+      "properties": {
+        "agentId": {"type": "string", "const": "mira-finance"},
+        "displayName": {"type": "string", "const": "Mira"},
+        "phase": {"type": "string", "const": "F1"}
+      }
+    },
+    "workspace": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "isolation"],
+      "properties": {
+        "path": {"type": "string", "const": "/root/.workspaces/mira-finance"},
+        "isolation": {"type": "string", "const": "dedicated-workspace"}
+      }
+    },
+    "features": {
+      "$ref": "feature-flags.schema.json"
+    },
+    "logging": {
+      "$ref": "logging.schema.json"
+    },
+    "optionalIntegrations": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["database", "documentTemplates", "googleDrive", "whatsApp"],
+      "properties": {
+        "database": {"type": "string", "const": "not-configured"},
+        "documentTemplates": {"type": "string", "const": "not-configured"},
+        "googleDrive": {"type": "string", "const": "not-configured"},
+        "whatsApp": {"type": "string", "const": "not-configured"}
+      }
+    }
+  }
+}
+

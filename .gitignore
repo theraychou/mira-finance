@@ -1,0 +1,53 @@
+# Local environment and credentials
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+credentials*.json
+token*.json
+
+# Dependencies and local tooling
+node_modules/
+.coverage/
+.cache/
+*.tmp
+*.bak
+
+# Runtime data (never commit finance records)
+data/*.sqlite
+data/*.sqlite3
+data/*.sqlite-*
+data/pending/*
+!data/pending/.gitkeep
+data/locks/*
+!data/locks/.gitkeep
+data/backups/*
+!data/backups/.gitkeep
+
+# Generated and logged output
+generated/**/*
+!generated/**/.gitkeep
+logs/*.jsonl
+!logs/.gitkeep
+tests/generated-output/*
+!tests/generated-output/.gitkeep
+
+# Operational configuration and document templates
+config/*.local.json
+config/bank-profiles.json
+config/business-entities.json
+config/customers.json
+config/drive-folders.json
+templates/**/*.docx
+templates/**/*.dotx
+
+# Local source specification is deliberately excluded from the public repo
+OpenClaw_Finance_Agent.docx
+
+# Platform files
+.DS_Store
+Thumbs.db
+
