@@ -28,8 +28,10 @@ data/backups/*
 !data/backups/.gitkeep
 
 # Generated and logged output
-generated/**/*
-!generated/**/.gitkeep
+generated/*
+!generated/*/
+generated/*/*
+!generated/*/.gitkeep
 logs/*.jsonl
 !logs/.gitkeep
 tests/generated-output/*
@@ -50,4 +52,3 @@ OpenClaw_Finance_Agent.docx
 # Platform files
 .DS_Store
 Thumbs.db
-
