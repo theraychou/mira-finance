@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "profiles": [
+    {
+      "id": "cimb-myr",
+      "currency": "MYR",
+      "provider": "CIMB Bank",
+      "invoiceMarkers": ["CIMB BANK BERHAD", "CIBBMYKL"]
+    },
+    {
+      "id": "maybank-sgd",
+      "currency": "SGD",
+      "provider": "Maybank",
+      "invoiceMarkers": ["MAYBANK SINGAPORE", "MBBESGS2"]
+    },
+    {
+      "id": "wise-usd",
+      "currency": "USD",
+      "provider": "Wise",
+      "invoiceMarkers": ["COMMUNITY FEDERAL SAVINGS BANK", "CMFGUS33"]
+    }
+  ],
+  "notes": "Sensitive payment details remain only inside protected, ignored DOCX templates."
+}

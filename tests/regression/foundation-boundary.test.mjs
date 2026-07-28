@@ -23,13 +23,14 @@ test('all later-phase feature flags remain disabled', async () => {
   });
 });
 
-test('no database or document templates exist in Phase F1', async () => {
+test('F2 has six source and normalized templates but no database', async () => {
   assert.equal(await exists('data/finance.sqlite3'), false);
   const currencies = ['myr', 'sgd', 'usd'];
   for (const currency of currencies) {
-    const directory = path.join(repositoryRoot, 'templates', currency);
-    const files = await readdir(directory);
-    assert.equal(files.some((name) => /\.(docx|dotx)$/i.test(name)), false);
+    const sourceFiles = await readdir(path.join(repositoryRoot, 'templates', 'source', currency));
+    const normalizedFiles = await readdir(path.join(repositoryRoot, 'templates', 'normalized', currency));
+    assert.equal(sourceFiles.filter((name) => /\.original\.docx$/i.test(name)).length, 2);
+    assert.equal(normalizedFiles.filter((name) => /\.docx$/i.test(name)).length, 2);
   }
 });
 
@@ -46,4 +47,3 @@ test('source specification and sensitive runtime files are ignored', async () =>
     assert.ok(ignore.includes(required), `missing ignore rule: ${required}`);
   }
 });
-

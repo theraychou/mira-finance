@@ -2,12 +2,16 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { runHealthCheck } from '../../scripts/health-check.mjs';
 
-test('health check passes with optional integrations absent', async () => {
+test('health check passes with F2 templates configured and later integrations absent', async () => {
   const report = await runHealthCheck({ env: {} });
   assert.equal(report.healthy, true);
+  assert.equal(report.phase, 'F2');
   const optional = report.checks.filter((item) => item.name.startsWith('optional:'));
   assert.equal(optional.length, 4);
-  assert.ok(optional.every((item) => item.status === 'NOT_CONFIGURED'));
+  assert.equal(optional.find((item) => item.name === 'optional:document-templates').status, 'CONFIGURED');
+  assert.ok(optional
+    .filter((item) => item.name !== 'optional:document-templates')
+    .every((item) => item.status === 'NOT_CONFIGURED'));
 });
 
 test('health check does not print or require credential values', async () => {
@@ -21,4 +25,3 @@ test('health check does not print or require credential values', async () => {
   const serialised = JSON.stringify(report);
   assert.doesNotMatch(serialised, /test\.operator|TEST_FOLDER_ID|120000000000000000/);
 });
-

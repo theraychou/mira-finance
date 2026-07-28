@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "maxLineItems": 7,
+  "common": [
+    "test_banner",
+    "document_number",
+    "issue_date",
+    "customer_name",
+    "company_name",
+    "address_line_1",
+    "address_line_2",
+    "customer_contact",
+    "subtotal",
+    "discount",
+    "total"
+  ],
+  "quotationOnly": ["valid_until"],
+  "invoiceOnly": ["due_date"],
+  "lineItemPattern": [
+    "line_{n}_description",
+    "line_{n}_unit_price",
+    "line_{n}_quantity",
+    "line_{n}_total"
+  ],
+  "taxPolicy": {
+    "mode": "disabled",
+    "taxMinorRequired": 0,
+    "nonZeroTaxAction": "reject"
+  }
+}

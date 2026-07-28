@@ -11,7 +11,14 @@
     "validate:config": "node scripts/validate-config.mjs",
     "health": "node scripts/health-check.mjs",
     "health:json": "node scripts/health-check.mjs --json",
+    "templates:normalize": "node scripts/normalize-templates.mjs",
+    "templates:validate": "node scripts/validate-templates.mjs",
+    "templates:render-test": "node scripts/render-template-fixtures.mjs",
     "test": "node --test tests/unit/*.test.mjs tests/integration/*.test.mjs tests/regression/*.test.mjs"
+  },
+  "dependencies": {
+    "@xmldom/xmldom": "0.9.10",
+    "docxtemplater": "3.69.3",
+    "pizzip": "3.2.0"
   }
 }
-

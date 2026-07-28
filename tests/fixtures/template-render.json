@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "testBanner": "TEST / NOT VALID",
+  "documentNumber": "TEST-NOT-VALID",
+  "issueDate": "27 July 2026",
+  "validUntil": "26 August 2026",
+  "dueDate": "26 August 2026",
+  "customer": {
+    "name": "Test Contact",
+    "companyName": "Example Testing Industries Sdn. Bhd.",
+    "addressLine1": "Unit 88, Synthetic Commerce and Technology Demonstration Centre",
+    "addressLine2": "12345 Example Boulevard, Test District, Fictional State 99999",
+    "contact": "test.finance@example.invalid / +000 000 0000"
+  },
+  "lineItems": [
+    {
+      "description": "Synthetic advisory engagement\nDiscovery, planning and documented recommendations",
+      "unitPrice": "1,000.00",
+      "quantity": "1",
+      "lineTotal": "1,000.00"
+    },
+    {
+      "description": "Synthetic workshop session with a deliberately long description to verify wrapping across multiple lines without clipping",
+      "unitPrice": "250.00",
+      "quantity": "2",
+      "lineTotal": "500.00"
+    },
+    {
+      "description": "Test documentation pack - section one",
+      "unitPrice": "100.00",
+      "quantity": "1",
+      "lineTotal": "100.00"
+    },
+    {
+      "description": "Test documentation pack - section two",
+      "unitPrice": "100.00",
+      "quantity": "1",
+      "lineTotal": "100.00"
+    },
+    {
+      "description": "Test follow-up review and synthetic findings summary",
+      "unitPrice": "150.00",
+      "quantity": "1",
+      "lineTotal": "150.00"
+    },
+    {
+      "description": "Test-only overflow verification line with extended narrative content that must remain inside the table and continue naturally if pagination is required",
+      "unitPrice": "100.00",
+      "quantity": "1",
+      "lineTotal": "100.00"
+    },
+    {
+      "description": "Final synthetic line item - no goods or services supplied",
+      "unitPrice": "50.00",
+      "quantity": "1",
+      "lineTotal": "50.00"
+    }
+  ],
+  "amounts": {
+    "MYR": {"subtotal": "RM 2,000.00", "discount": "RM 0.00", "total": "RM 2,000.00"},
+    "SGD": {"subtotal": "SGD 2,000.00", "discount": "SGD 0.00", "total": "SGD 2,000.00"},
+    "USD": {"subtotal": "USD 2,000.00", "discount": "USD 0.00", "total": "USD 2,000.00"}
+  },
+  "taxMinor": 0
+}

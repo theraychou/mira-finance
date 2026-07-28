@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { access, lstat, readdir, stat } from 'node:fs/promises';
+import { access, lstat, readFile, readdir, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { runValidation, repositoryRoot } from './validate-config.mjs';
@@ -53,8 +53,16 @@ async function auditWorkspaceTree(root) {
 
 export async function runHealthCheck({ root = repositoryRoot, env = process.env } = {}) {
   const checks = [];
+  const foundation = JSON.parse(await readFile(path.join(root, 'config', 'foundation.json'), 'utf8'));
   const requiredFiles = ['README.md', 'AGENTS.md', 'SOUL.md', 'config/foundation.json'];
-  const requiredDirectories = ['logs', 'tests/unit', 'tests/integration', 'tests/regression'];
+  const requiredDirectories = [
+    'logs',
+    'templates/source',
+    'templates/normalized',
+    'tests/unit',
+    'tests/integration',
+    'tests/regression'
+  ];
 
   for (const relative of requiredFiles) {
     checks.push(check(`file:${relative}`, await exists(path.join(root, relative)) ? 'PASS' : 'FAIL', 'required foundation file'));
@@ -88,10 +96,10 @@ export async function runHealthCheck({ root = repositoryRoot, env = process.env 
   }
 
   const databasePresent = await exists(path.join(root, 'data', 'finance.sqlite3'));
-  checks.push(check('optional:database', databasePresent ? 'CONFIGURED' : 'NOT_CONFIGURED', 'Phase F2'));
+  checks.push(check('optional:database', databasePresent ? 'CONFIGURED' : 'NOT_CONFIGURED', 'Phase F3'));
 
-  const templateCount = await countFiles(path.join(root, 'templates'), '.docx');
-  checks.push(check('optional:document-templates', templateCount > 0 ? 'CONFIGURED' : 'NOT_CONFIGURED', 'later approved template phase'));
+  const templateCount = await countFiles(path.join(root, 'templates', 'normalized'), '.docx');
+  checks.push(check('optional:document-templates', templateCount === 6 ? 'CONFIGURED' : 'NOT_CONFIGURED', 'Phase F2'));
 
   const driveConfigured = Boolean(env.MIRA_GOOGLE_IDENTITY && env.MIRA_DRIVE_ROOT_FOLDER_ID);
   checks.push(check('optional:google-drive', driveConfigured ? 'CONFIGURED' : 'NOT_CONFIGURED', 'Phase F8'));
@@ -100,7 +108,7 @@ export async function runHealthCheck({ root = repositoryRoot, env = process.env 
   checks.push(check('optional:whatsapp', groupConfigured ? 'CONFIGURED' : 'NOT_CONFIGURED', 'Phase F10'));
 
   const healthy = !checks.some((item) => item.status === 'FAIL');
-  return { healthy, phase: 'F1', checks };
+  return { healthy, phase: foundation.project.phase, checks };
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

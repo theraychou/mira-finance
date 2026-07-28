@@ -4,9 +4,9 @@ This repository contains the isolated workspace for Mira, the future OpenClaw Fi
 
 ## Current phase
 
-Phase F1 - Repository and Workspace Foundation.
+Phase F2 - Template Intake and Normalisation.
 
-The workspace foundation is present, but Mira is not registered as an OpenClaw agent and cannot process finance documents. WhatsApp, Google Drive, templates, the finance database, numbering, and document generation are intentionally unconfigured.
+The workspace foundation and six protected currency/document templates are present, but Mira is not registered as an OpenClaw agent and cannot issue finance documents. WhatsApp, Google Drive, the finance database, numbering, and production document generation remain intentionally unconfigured.
 
 ## Workspace
 
@@ -21,15 +21,17 @@ This repository must remain separate from Jessie's `/root/clawd` workspace.
 
 ```text
 npm run validate:config
+npm run templates:normalize
+npm run templates:validate
+npm run templates:render-test
 npm run health
 npm test
 ```
 
-The health check exits successfully when the foundation is healthy, even when optional future integrations are absent. Missing Drive, WhatsApp, database, and template components are reported as `NOT_CONFIGURED`, not as failures.
+The health check exits successfully when the F2 foundation is healthy. Templates report `CONFIGURED`; Drive, WhatsApp, and the database remain `NOT_CONFIGURED`.
 
 ## Security
 
-Never commit credentials, OAuth material, bank details, customer information, finance databases, generated documents, or operational logs. This repository is currently public; only public-safe foundation code and documentation may be pushed.
+Never commit credentials, OAuth material, bank details, customer information, finance databases, templates, generated documents, or operational logs. This repository is currently public; only public-safe code, redacted mappings, and documentation may be pushed.
 
 See `AGENTS.md` for mandatory implementation boundaries.
-

@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "templates": [
+    {
+      "id": "quotation-myr",
+      "currency": "MYR",
+      "documentType": "quotation",
+      "providedFilename": "rc_quote_myr_temp.docx",
+      "sourcePath": "templates/source/myr/quotation.original.docx",
+      "normalizedPath": "templates/normalized/myr/quotation.docx",
+      "sourceSize": 61309,
+      "sourceSha256": "334017fead76db5cd3f8bcc2b81ac29354b7c65703823f9e31a2639525c7e574"
+    },
+    {
+      "id": "invoice-myr",
+      "currency": "MYR",
+      "documentType": "invoice",
+      "providedFilename": "rc_inv_myr_temp.docx",
+      "sourcePath": "templates/source/myr/invoice.original.docx",
+      "normalizedPath": "templates/normalized/myr/invoice.docx",
+      "sourceSize": 61207,
+      "sourceSha256": "fe43a8acf4b0b06f66198a47749566c851676e9c3b139a9e7f2db8f264923a4c"
+    },
+    {
+      "id": "quotation-sgd",
+      "currency": "SGD",
+      "documentType": "quotation",
+      "providedFilename": "rc_quote_sgd_temp.docx",
+      "sourcePath": "templates/source/sgd/quotation.original.docx",
+      "normalizedPath": "templates/normalized/sgd/quotation.docx",
+      "sourceSize": 61364,
+      "sourceSha256": "9ed093eb03bff2807de080670969f8f46bc92aa57c8588d20e32bee48fb63e39"
+    },
+    {
+      "id": "invoice-sgd",
+      "currency": "SGD",
+      "documentType": "invoice",
+      "providedFilename": "rc_inv_sgd_temp.docx",
+      "sourcePath": "templates/source/sgd/invoice.original.docx",
+      "normalizedPath": "templates/normalized/sgd/invoice.docx",
+      "sourceSize": 61307,
+      "sourceSha256": "3cbf30852ad6625170f628525422ee28b8a5af3cf0e4d55f0e26bad1a8e5f676"
+    },
+    {
+      "id": "quotation-usd",
+      "currency": "USD",
+      "documentType": "quotation",
+      "providedFilename": "rc_quote_usd_temp.docx",
+      "sourcePath": "templates/source/usd/quotation.original.docx",
+      "normalizedPath": "templates/normalized/usd/quotation.docx",
+      "sourceSize": 61287,
+      "sourceSha256": "566f0fc07c85eedbfa91a30369f3a5e0d1aef6f1cecf9e45f430dc3f073199ab"
+    },
+    {
+      "id": "invoice-usd",
+      "currency": "USD",
+      "documentType": "invoice",
+      "providedFilename": "rc_inv_usd_temp.docx",
+      "sourcePath": "templates/source/usd/invoice.original.docx",
+      "normalizedPath": "templates/normalized/usd/invoice.docx",
+      "sourceSize": 61367,
+      "sourceSha256": "7ca929f0b0e676474907d2ba70cba7daaf3697c3653a4520f55c5eec47b3914d"
+    }
+  ]
+}

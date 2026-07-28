@@ -32,6 +32,6 @@ This is the isolated repository and future workspace for OpenClaw Finance Agent 
 
 Before each phase: read the build specification and prior completion report, inspect relevant files, rerun the previous acceptance checks, inspect Git state, and back up anything that will change. Then implement only the current phase, run focused and regression tests, and provide the standard completion report.
 
-## Phase F1 status
+## Phase F2 status
 
-F1 establishes repository structure, schemas, tests, validation, and health reporting only. All operational feature flags remain disabled.
+F2 inventories and normalises six protected quotation/invoice templates. Original template hashes are immutable, account details remain inside ignored DOCX files, test data is synthetic, and every test output must display `TEST / NOT VALID`. All operational feature flags remain disabled.

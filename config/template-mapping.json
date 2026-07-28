@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "currencies": {
+    "MYR": {
+      "quotationTemplateId": "quotation-myr",
+      "invoiceTemplateId": "invoice-myr",
+      "bankProfileId": "cimb-myr"
+    },
+    "SGD": {
+      "quotationTemplateId": "quotation-sgd",
+      "invoiceTemplateId": "invoice-sgd",
+      "bankProfileId": "maybank-sgd"
+    },
+    "USD": {
+      "quotationTemplateId": "quotation-usd",
+      "invoiceTemplateId": "invoice-usd",
+      "bankProfileId": "wise-usd"
+    }
+  }
+}
