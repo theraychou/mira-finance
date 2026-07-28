@@ -96,6 +96,19 @@ function appendTestBanner(document, paragraph) {
   paragraph.appendChild(run);
 }
 
+function preventRowSplit(document, paragraph) {
+  const row = ancestor(paragraph, 'w:tr');
+  if (!row) throw new Error('Expected a containing table row.');
+  let properties = directElements(row, 'w:trPr')[0];
+  if (!properties) {
+    properties = document.createElement('w:trPr');
+    row.insertBefore(properties, row.firstChild);
+  }
+  if (directElements(properties, 'w:cantSplit').length === 0) {
+    properties.appendChild(document.createElement('w:cantSplit'));
+  }
+}
+
 function normalizeDocumentXml(xml, template) {
   const parseErrors = [];
   const document = new DOMParser({
@@ -181,6 +194,11 @@ function normalizeDocumentXml(xml, template) {
   if (template.currency === 'MYR' && template.documentType === 'quotation') {
     replaceParagraphText(document, findParagraph(document, 'TOTAL (RM)'), 'TOTAL (MYR)');
   }
+
+  const keepTogetherLabel = template.documentType === 'quotation'
+    ? 'ACCEPTED BY (CLIENT)'
+    : 'PREFERRED PAYMENT METHOD — BANK TRANSFER';
+  preventRowSplit(document, findParagraph(document, keepTogetherLabel));
 
   if (!cellText(lineTable).includes('{line_7_total}')) throw new Error(`${template.id}: line-item placeholders were not inserted.`);
   return new XMLSerializer().serializeToString(document);
