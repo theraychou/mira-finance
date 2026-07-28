@@ -14,6 +14,8 @@
     "templates:normalize": "node scripts/normalize-templates.mjs",
     "templates:validate": "node scripts/validate-templates.mjs",
     "templates:render-test": "node scripts/render-template-fixtures.mjs",
+    "templates:sample-myr": "node scripts/render-template-fixtures.mjs --fixture tests/fixtures/sample-myr-invoice.json --template invoice-myr --output-root generated/samples",
+    "templates:sample-all": "node scripts/render-template-fixtures.mjs --fixture tests/fixtures/sample-two-item-all-currencies.json --output-root generated/samples-all",
     "test": "node --test tests/unit/*.test.mjs tests/integration/*.test.mjs tests/regression/*.test.mjs"
   },
   "dependencies": {

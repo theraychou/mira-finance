@@ -24,11 +24,15 @@ npm run validate:config
 npm run templates:normalize
 npm run templates:validate
 npm run templates:render-test
+npm run templates:sample-myr
+npm run templates:sample-all
 npm run health
 npm test
 ```
 
 The health check exits successfully when the F2 foundation is healthy. Templates report `CONFIGURED`; Drive, WhatsApp, and the database remain `NOT_CONFIGURED`.
+
+Normalized finance documents are A4 portrait. Amount columns and totals are right aligned, quantity is centered, and generated copies remove unused trailing item rows while retaining a seven-item maximum.
 
 ## Security
 

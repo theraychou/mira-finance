@@ -2,6 +2,7 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { DOMParser } from '@xmldom/xmldom';
 import {
   loadTemplateContract,
   placeholderTokens,
@@ -18,6 +19,109 @@ function packageParts(zip) {
 
 function assertEqual(actual, expected, message) {
   if (actual !== expected) throw new Error(message);
+}
+
+function directElements(parent, name) {
+  return [...parent.childNodes].filter((node) => node.nodeType === 1 && node.nodeName === name);
+}
+
+function ancestor(node, name) {
+  let current = node.parentNode;
+  while (current) {
+    if (current.nodeName === name) return current;
+    current = current.parentNode;
+  }
+  return null;
+}
+
+function paragraphText(paragraph) {
+  return [...paragraph.getElementsByTagName('w:t')].map((item) => item.textContent ?? '').join('').trim();
+}
+
+function paragraphAlignment(paragraph) {
+  const properties = directElements(paragraph, 'w:pPr')[0];
+  const justification = properties ? directElements(properties, 'w:jc')[0] : undefined;
+  return justification?.getAttribute('w:val') ?? '';
+}
+
+function paragraphSpacing(paragraph) {
+  const properties = directElements(paragraph, 'w:pPr')[0];
+  return properties ? directElements(properties, 'w:spacing')[0] : undefined;
+}
+
+function validateLayout(xml, template) {
+  const templateId = template.id;
+  const document = new DOMParser().parseFromString(xml, 'application/xml');
+  const sections = [...document.getElementsByTagName('w:sectPr')];
+  if (sections.length === 0) throw new Error(`${templateId}: section properties missing.`);
+  for (const section of sections) {
+    const pageSize = directElements(section, 'w:pgSz')[0];
+    if (!pageSize || pageSize.getAttribute('w:w') !== '11906' || pageSize.getAttribute('w:h') !== '16838') {
+      throw new Error(`${templateId}: page size must be A4 portrait.`);
+    }
+  }
+
+  const descriptionHeader = [...document.getElementsByTagName('w:p')]
+    .find((paragraph) => paragraphText(paragraph) === 'DESCRIPTION');
+  const lineTable = descriptionHeader ? ancestor(descriptionHeader, 'w:tbl') : undefined;
+  const rows = lineTable ? directElements(lineTable, 'w:tr') : [];
+  if (rows.length !== 8) throw new Error(`${templateId}: normalized template must retain seven available item rows.`);
+  const headerCells = directElements(rows[0], 'w:tc');
+  if (paragraphAlignment(directElements(headerCells[2], 'w:p')[0]) !== 'center') {
+    throw new Error(`${templateId}: QTY header must be centered.`);
+  }
+  const expectedAlignments = ['left', 'right', 'center', 'right'];
+  for (const row of rows.slice(1)) {
+    const cells = directElements(row, 'w:tc');
+    for (let index = 0; index < cells.length; index += 1) {
+      const paragraph = directElements(cells[index], 'w:p')[0];
+      if (paragraphAlignment(paragraph) !== expectedAlignments[index]) {
+        throw new Error(`${templateId}: line-item column ${index + 1} alignment is invalid.`);
+      }
+      const spacing = paragraphSpacing(paragraph);
+      if (!spacing || spacing.getAttribute('w:before') !== '40' || spacing.getAttribute('w:after') !== '40') {
+        throw new Error(`${templateId}: line-item cell spacing is invalid.`);
+      }
+    }
+  }
+
+  const subtotal = [...document.getElementsByTagName('w:p')]
+    .find((paragraph) => paragraphText(paragraph) === 'Subtotal');
+  const totalsTable = subtotal ? ancestor(subtotal, 'w:tbl') : undefined;
+  if (!totalsTable) throw new Error(`${templateId}: totals table missing.`);
+  const totalRows = directElements(totalsTable, 'w:tr');
+  for (const row of totalRows) {
+    const valueCell = directElements(row, 'w:tc')[1];
+    const paragraph = valueCell ? directElements(valueCell, 'w:p')[0] : undefined;
+    if (!paragraph || paragraphAlignment(paragraph) !== 'right') {
+      throw new Error(`${templateId}: total values must be right aligned.`);
+    }
+  }
+  const finalValueCell = directElements(totalRows.at(-1), 'w:tc')[1];
+  const finalValueParagraph = directElements(finalValueCell, 'w:p')[0];
+  const colors = [...finalValueParagraph.getElementsByTagName('w:color')]
+    .map((color) => color.getAttribute('w:val'));
+  if (!colors.includes('FFFFFF')) throw new Error(`${templateId}: final total value must be white.`);
+
+  if (template.documentType === 'invoice') {
+    const paymentHeading = [...document.getElementsByTagName('w:p')]
+      .find((paragraph) => paragraphText(paragraph) === 'PREFERRED PAYMENT METHOD — BANK TRANSFER');
+    const paymentRow = paymentHeading ? ancestor(paymentHeading, 'w:tr') : undefined;
+    if (!paymentRow) throw new Error(`${templateId}: payment block missing.`);
+    if (paymentRow.getElementsByTagName('w:trHeight').length !== 0) {
+      throw new Error(`${templateId}: payment block must not have a fixed row height.`);
+    }
+    for (const paragraph of [...paymentRow.getElementsByTagName('w:p')]) {
+      const heading = paragraphText(paragraph) === 'PREFERRED PAYMENT METHOD — BANK TRANSFER';
+      const spacing = paragraphSpacing(paragraph);
+      if (!spacing || spacing.getAttribute('w:before') !== '0' || spacing.getAttribute('w:after') !== (heading ? '20' : '0')) {
+        throw new Error(`${templateId}: payment block spacing is invalid.`);
+      }
+      const sizes = [...paragraph.getElementsByTagName('w:sz')]
+        .map((size) => Number(size.getAttribute('w:val')));
+      if (sizes.some((size) => size > 16)) throw new Error(`${templateId}: payment block text is too large.`);
+    }
+  }
 }
 
 function validateMappings(contract) {
@@ -66,6 +170,7 @@ async function validateTemplate(root, contract, template) {
   const actual = placeholderTokens(normalizedPackage.xml);
   assertEqual(JSON.stringify(actual), JSON.stringify(expected), `${template.id}: placeholder contract mismatch.`);
   if (!normalizedPackage.xml.includes('{test_banner}')) throw new Error(`${template.id}: test banner slot missing.`);
+  validateLayout(normalizedPackage.xml, template);
 
   if (template.documentType === 'invoice') {
     const profileId = contract.templateMapping.currencies[template.currency].bankProfileId;

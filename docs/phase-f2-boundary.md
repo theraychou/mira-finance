@@ -9,6 +9,7 @@
 - Synthetic fixture rendering marked `TEST / NOT VALID`
 - Multi-line item, long-address, overflow, zero-tax, and non-zero-tax rejection tests
 - Visual comparison of source and test outputs
+- A4 portrait enforcement, monetary/quantity alignment, and compact short-document pagination
 
 ## Explicitly not included
 

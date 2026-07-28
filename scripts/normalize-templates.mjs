@@ -57,7 +57,79 @@ function replaceParagraphText(document, paragraph, value) {
   for (const node of nodes.slice(1)) setElementText(document, node, '');
 }
 
-function setCellText(document, cell, value) {
+function paragraphProperties(document, paragraph) {
+  let properties = directElements(paragraph, 'w:pPr')[0];
+  if (!properties) {
+    properties = document.createElement('w:pPr');
+    paragraph.insertBefore(properties, paragraph.firstChild);
+  }
+  return properties;
+}
+
+function setParagraphLayout(document, paragraph, {
+  alignment,
+  compact = false,
+  spacingBefore,
+  spacingAfter,
+  line = '240'
+} = {}) {
+  const properties = paragraphProperties(document, paragraph);
+  if (alignment) {
+    let justification = directElements(properties, 'w:jc')[0];
+    if (!justification) {
+      justification = document.createElement('w:jc');
+      properties.appendChild(justification);
+    }
+    justification.setAttribute('w:val', alignment);
+  }
+  if (compact || spacingBefore !== undefined || spacingAfter !== undefined) {
+    let spacing = directElements(properties, 'w:spacing')[0];
+    if (!spacing) {
+      spacing = document.createElement('w:spacing');
+      properties.appendChild(spacing);
+    }
+    spacing.setAttribute('w:before', spacingBefore ?? '0');
+    spacing.setAttribute('w:after', spacingAfter ?? '0');
+    spacing.setAttribute('w:line', line);
+    spacing.setAttribute('w:lineRule', 'auto');
+  }
+}
+
+function setRunSize(document, paragraph, halfPoints) {
+  for (const run of directElements(paragraph, 'w:r')) {
+    let properties = directElements(run, 'w:rPr')[0];
+    if (!properties) {
+      properties = document.createElement('w:rPr');
+      run.insertBefore(properties, run.firstChild);
+    }
+    for (const name of ['w:sz', 'w:szCs']) {
+      let size = directElements(properties, name)[0];
+      if (!size) {
+        size = document.createElement(name);
+        properties.appendChild(size);
+      }
+      size.setAttribute('w:val', halfPoints);
+    }
+  }
+}
+
+function setRunColor(document, paragraph, value) {
+  for (const run of directElements(paragraph, 'w:r')) {
+    let properties = directElements(run, 'w:rPr')[0];
+    if (!properties) {
+      properties = document.createElement('w:rPr');
+      run.insertBefore(properties, run.firstChild);
+    }
+    let color = directElements(properties, 'w:color')[0];
+    if (!color) {
+      color = document.createElement('w:color');
+      properties.appendChild(color);
+    }
+    color.setAttribute('w:val', value);
+  }
+}
+
+function setCellText(document, cell, value, layout = {}) {
   let paragraph = directElements(cell, 'w:p')[0];
   if (!paragraph) {
     paragraph = document.createElement('w:p');
@@ -72,6 +144,7 @@ function setCellText(document, cell, value) {
   text.appendChild(document.createTextNode(value));
   run.appendChild(text);
   paragraph.appendChild(run);
+  setParagraphLayout(document, paragraph, layout);
 }
 
 function appendTestBanner(document, paragraph) {
@@ -109,6 +182,42 @@ function preventRowSplit(document, paragraph) {
   }
 }
 
+function removeRowHeight(row) {
+  const properties = directElements(row, 'w:trPr')[0];
+  if (!properties) return;
+  for (const height of directElements(properties, 'w:trHeight')) properties.removeChild(height);
+}
+
+function enforceA4(document) {
+  const sections = [...document.getElementsByTagName('w:sectPr')];
+  if (sections.length === 0) throw new Error('Template has no section properties.');
+  for (const section of sections) {
+    let pageSize = directElements(section, 'w:pgSz')[0];
+    if (!pageSize) {
+      pageSize = document.createElement('w:pgSz');
+      section.insertBefore(pageSize, section.firstChild);
+    }
+    pageSize.setAttribute('w:w', '11906');
+    pageSize.setAttribute('w:h', '16838');
+    pageSize.removeAttribute('w:orient');
+  }
+}
+
+function compactPaymentBlock(document, headingParagraph) {
+  const row = ancestor(headingParagraph, 'w:tr');
+  if (!row) throw new Error('Payment block row not found.');
+  removeRowHeight(row);
+  for (const paragraph of [...row.getElementsByTagName('w:p')]) {
+    const isHeading = paragraphText(paragraph) === 'PREFERRED PAYMENT METHOD — BANK TRANSFER';
+    setParagraphLayout(document, paragraph, {
+      spacingBefore: '0',
+      spacingAfter: isHeading ? '20' : '0',
+      line: '220'
+    });
+    setRunSize(document, paragraph, isHeading ? '15' : '16');
+  }
+}
+
 function normalizeDocumentXml(xml, template) {
   const parseErrors = [];
   const document = new DOMParser({
@@ -117,6 +226,7 @@ function normalizeDocumentXml(xml, template) {
     }
   }).parseFromString(xml, 'application/xml');
   if (parseErrors.length > 0) throw new Error('Unable to parse template XML.');
+  enforceA4(document);
 
   const title = template.documentType === 'quotation' ? 'QUOTATION' : 'INVOICE';
   const titleParagraph = findParagraph(document, title);
@@ -161,12 +271,20 @@ function normalizeDocumentXml(xml, template) {
   const lineTable = ancestor(descriptionHeader, 'w:tbl');
   const lineRows = directElements(lineTable, 'w:tr');
   if (lineRows.length !== 8) throw new Error(`${template.id}: expected seven line-item rows.`);
+  const headerCells = directElements(lineRows[0], 'w:tc');
+  setParagraphLayout(document, directElements(headerCells[2], 'w:p')[0], { alignment: 'center' });
   for (let rowIndex = 1; rowIndex < lineRows.length; rowIndex += 1) {
+    removeRowHeight(lineRows[rowIndex]);
     const cells = directElements(lineRows[rowIndex], 'w:tc');
     if (cells.length !== 4) throw new Error(`${template.id}: line-item row shape changed.`);
     const fields = ['description', 'unit_price', 'quantity', 'total'];
+    const alignments = ['left', 'right', 'center', 'right'];
     for (let cellIndex = 0; cellIndex < cells.length; cellIndex += 1) {
-      setCellText(document, cells[cellIndex], `{line_${rowIndex}_${fields[cellIndex]}}`);
+      setCellText(document, cells[cellIndex], `{line_${rowIndex}_${fields[cellIndex]}}`, {
+        alignment: alignments[cellIndex],
+        spacingBefore: '40',
+        spacingAfter: '40'
+      });
     }
   }
 
@@ -177,7 +295,10 @@ function normalizeDocumentXml(xml, template) {
   if (totalRows.length !== totalFields.length) throw new Error(`${template.id}: totals table shape changed.`);
   for (let index = 0; index < totalRows.length; index += 1) {
     const cells = directElements(totalRows[index], 'w:tc');
-    setCellText(document, cells[1], totalFields[index]);
+    setCellText(document, cells[1], totalFields[index], { alignment: 'right', compact: true });
+    if (index === totalRows.length - 1) {
+      setRunColor(document, directElements(cells[1], 'w:p')[0], 'FFFFFF');
+    }
   }
 
   for (const node of textNodes(document)) {
@@ -199,6 +320,9 @@ function normalizeDocumentXml(xml, template) {
     ? 'ACCEPTED BY (CLIENT)'
     : 'PREFERRED PAYMENT METHOD — BANK TRANSFER';
   preventRowSplit(document, findParagraph(document, keepTogetherLabel));
+  if (template.documentType === 'invoice') {
+    compactPaymentBlock(document, findParagraph(document, keepTogetherLabel));
+  }
 
   if (!cellText(lineTable).includes('{line_7_total}')) throw new Error(`${template.id}: line-item placeholders were not inserted.`);
   return new XMLSerializer().serializeToString(document);

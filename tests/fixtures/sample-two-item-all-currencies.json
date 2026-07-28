@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "testBanner": "TEST / NOT VALID",
+  "documentNumber": "TEST-TWO-ITEM-SAMPLE",
+  "issueDate": "28 July 2026",
+  "validUntil": "27 August 2026",
+  "dueDate": "27 August 2026",
+  "customer": {
+    "name": "Test Buyer",
+    "companyName": "Sample Client Industries Sdn. Bhd.",
+    "addressLine1": "Suite 8, Example Business Centre",
+    "addressLine2": "88 Fictional Avenue, Test District 50000",
+    "contact": "accounts@example.invalid / +000 000 0000"
+  },
+  "lineItems": [
+    {
+      "description": "Synthetic finance operations process review",
+      "unitPrice": "1,200.00",
+      "quantity": "1",
+      "lineTotal": "1,200.00"
+    },
+    {
+      "description": "Test-only implementation planning workshop",
+      "unitPrice": "300.00",
+      "quantity": "1",
+      "lineTotal": "300.00"
+    }
+  ],
+  "amounts": {
+    "MYR": {"subtotal": "RM 1,500.00", "discount": "RM 0.00", "total": "RM 1,500.00"},
+    "SGD": {"subtotal": "SGD 1,500.00", "discount": "SGD 0.00", "total": "SGD 1,500.00"},
+    "USD": {"subtotal": "USD 1,500.00", "discount": "USD 0.00", "total": "USD 1,500.00"}
+  },
+  "taxMinor": 0
+}
