@@ -124,11 +124,39 @@ export async function convertDocxToPdf({
     });
     const produced = path.join(path.dirname(pdfPath), `${path.basename(docxPath, path.extname(docxPath))}.pdf`);
     if (path.resolve(produced) !== path.resolve(pdfPath)) await rename(produced, pdfPath);
+    const normalized = normalizePdfDeterminism(await readFile(pdfPath));
+    await writeFile(pdfPath, normalized, { flag: 'w', mode: 0o600 });
     await chmod(pdfPath, 0o600);
     return pdfPath;
   } finally {
     await rm(profile, { recursive: true, force: true });
   }
+}
+
+export function normalizePdfDeterminism(buffer) {
+  if (!Buffer.isBuffer(buffer) || !buffer.subarray(0, 5).equals(Buffer.from('%PDF-'))) throw new Error('INVALID_PDF_STRUCTURE');
+  let text = buffer.toString('latin1');
+  let dateCount = 0;
+  let idCount = 0;
+  let checksumCount = 0;
+  text = text.replace(/\/CreationDate\(D:\d{14}[+-]\d{2}'\d{2}'\)/g, () => {
+    dateCount += 1;
+    return "/CreationDate(D:19800101000000+00'00')";
+  });
+  text = text.replace(/\/ID \[ <[0-9A-Fa-f]{32}>\s*<[0-9A-Fa-f]{32}> \]/g, (match) => {
+    idCount += 1;
+    return match.replace(/[0-9A-Fa-f]{32}/g, '00000000000000000000000000000000');
+  });
+  text = text.replace(/\/DocChecksum \/[0-9A-Fa-f]{32}/g, () => {
+    checksumCount += 1;
+    return '/DocChecksum /00000000000000000000000000000000';
+  });
+  if (dateCount < 1 || idCount !== 1 || checksumCount !== 1) throw new Error('PDF_DETERMINISM_FIELDS_MISSING');
+  const digest = createHash('sha256').update(Buffer.from(text, 'latin1')).digest('hex').slice(0, 32).toUpperCase();
+  text = text
+    .replace(/\/ID \[ <0{32}>(\s*)<0{32}> \]/, `/ID [ <${digest}>$1<${digest}> ]`)
+    .replace(/\/DocChecksum \/0{32}/, `/DocChecksum /${digest}`);
+  return Buffer.from(text, 'latin1');
 }
 
 export async function inspectPdf({ pdfPath, pdfinfoCommand = 'pdfinfo', pdftotextCommand = 'pdftotext' }) {

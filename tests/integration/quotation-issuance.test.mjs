@@ -16,6 +16,7 @@ import {
   createQuotationDraft
 } from '../../scripts/lib/quotation-drafts.mjs';
 import {
+  convertDocxToPdf,
   publishImmutableBuffer,
   renderQuotationDocx
 } from '../../scripts/lib/quotation-renderer.mjs';
@@ -246,7 +247,13 @@ test('LibreOffice produces a validated local A4 PDF from a confirmed test quotat
     await addConfirmation(ids);
     const issued = await issueConfirmedQuotation(issueArguments(ids, { pdfConverter: undefined, pdfInspector: undefined }));
     assert.equal(issued.status, 'ISSUED');
-    assert.equal((await readFile(path.join(ids.outputRoot, issued.pdf_relative_path))).subarray(0, 5).toString(), '%PDF-');
+    const issuedDocxPath = path.join(ids.outputRoot, issued.docx_relative_path);
+    const issuedPdf = await readFile(path.join(ids.outputRoot, issued.pdf_relative_path));
+    assert.equal(issuedPdf.subarray(0, 5).toString(), '%PDF-');
+    const repeatDirectory = await mkdtemp(path.join(ids.directory, 'repeat-pdf-'));
+    const repeatPdfPath = path.join(repeatDirectory, 'quotation.pdf');
+    await convertDocxToPdf({ docxPath: issuedDocxPath, pdfPath: repeatPdfPath });
+    assert.equal(sha256(await readFile(repeatPdfPath)), sha256(issuedPdf));
   } finally {
     await cleanup(ids);
   }
