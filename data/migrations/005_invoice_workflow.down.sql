@@ -1,0 +1,17 @@
+DROP INDEX invoice_payment_events_invoice_idx;
+DROP INDEX invoice_payment_drafts_status_idx;
+DROP INDEX invoice_issuances_status_idx;
+DROP INDEX invoice_draft_versions_invoice_idx;
+DROP INDEX invoices_full_quotation_uq;
+DROP TRIGGER invoice_payment_events_no_delete;
+DROP TRIGGER invoice_payment_events_no_update;
+DROP TABLE invoice_payment_events;
+DROP TABLE invoice_payment_drafts;
+DROP TRIGGER invoice_issuance_attempts_no_delete;
+DROP TRIGGER invoice_issuance_attempts_no_update;
+DROP TABLE invoice_issuance_attempts;
+DROP TABLE invoice_issuances;
+DROP TRIGGER invoice_draft_versions_no_delete;
+DROP TRIGGER invoice_draft_versions_no_update;
+DROP TABLE invoice_draft_versions;
+DROP TABLE invoice_draft_state;

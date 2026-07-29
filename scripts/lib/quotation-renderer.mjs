@@ -23,7 +23,7 @@ const MONTHS = [
   'July', 'August', 'September', 'October', 'November', 'December'
 ];
 
-function formatDate(dateText) {
+export function formatDate(dateText) {
   const date = new Date(`${dateText}T00:00:00.000Z`);
   if (Number.isNaN(date.valueOf()) || date.toISOString().slice(0, 10) !== dateText) throw new TypeError('Document date is invalid.');
   return `${date.getUTCDate()} ${MONTHS[date.getUTCMonth()]} ${date.getUTCFullYear()}`;
@@ -40,7 +40,7 @@ export function formatAmount(amountMinor, currency, { includeCurrency = true } =
   return `${prefixes[currency]} ${value}`;
 }
 
-function addressLines(value) {
+export function addressLines(value) {
   const lines = String(value ?? '').split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
   if (lines.length <= 2) return [lines[0] ?? '', lines[1] ?? ''];
   return [lines[0], lines.slice(1).join(', ')];

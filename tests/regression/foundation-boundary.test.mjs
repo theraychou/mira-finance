@@ -13,7 +13,7 @@ async function exists(relative) {
   }
 }
 
-test('Phase F6 enables local document generation while external integrations remain disabled', async () => {
+test('Phase F7 keeps local document generation enabled while external integrations remain disabled', async () => {
   const foundation = JSON.parse(await readFile(path.join(repositoryRoot, 'config/foundation.json'), 'utf8'));
   assert.deepEqual(foundation.features, {
     database: true,
@@ -23,7 +23,7 @@ test('Phase F6 enables local document generation while external integrations rem
   });
 });
 
-test('F6 retains all six templates and all four reversible database migrations', async () => {
+test('F7 retains all six templates and all five reversible database migrations', async () => {
   assert.equal(await exists('data/migrations/001_initial.up.sql'), true);
   assert.equal(await exists('data/migrations/001_initial.down.sql'), true);
   assert.equal(await exists('data/migrations/002_registries.up.sql'), true);
@@ -32,7 +32,10 @@ test('F6 retains all six templates and all four reversible database migrations',
   assert.equal(await exists('data/migrations/003_quotation_drafts.down.sql'), true);
   assert.equal(await exists('data/migrations/004_quotation_issuance.up.sql'), true);
   assert.equal(await exists('data/migrations/004_quotation_issuance.down.sql'), true);
+  assert.equal(await exists('data/migrations/005_invoice_workflow.up.sql'), true);
+  assert.equal(await exists('data/migrations/005_invoice_workflow.down.sql'), true);
   assert.equal(await exists('schemas/quotation-draft.schema.json'), true);
+  assert.equal(await exists('schemas/invoice-draft.schema.json'), true);
   const currencies = ['myr', 'sgd', 'usd'];
   for (const currency of currencies) {
     const sourceFiles = await readdir(path.join(repositoryRoot, 'templates', 'source', currency));
