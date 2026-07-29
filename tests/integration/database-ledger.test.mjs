@@ -32,14 +32,14 @@ function allocateInWorker(workerData) {
   });
 }
 
-test('database migrations are reversible and create the complete F7 ledger', async () => {
+test('database migrations are reversible and create the complete F8 ledger', async () => {
   const { directory, databasePath } = await temporaryLedger();
   try {
     assert.deepEqual(checkDatabase(databasePath), {
       ok: true,
       integrity: ['ok'],
       foreignKeyViolations: 0,
-      schemaVersion: 5
+      schemaVersion: 6
     });
     const database = openDatabase(databasePath, { readOnly: true });
     const tables = database.prepare("SELECT name FROM sqlite_master WHERE type = 'table'").all().map((row) => row.name);
@@ -51,9 +51,11 @@ test('database migrations are reversible and create the complete F7 ledger', asy
       'currencies', 'bank_profiles', 'tax_rules', 'quotation_draft_state', 'quotation_draft_versions',
       'quotation_issuances', 'quotation_issuance_attempts', 'invoice_draft_state',
       'invoice_draft_versions', 'invoice_issuances', 'invoice_issuance_attempts',
-      'invoice_payment_drafts', 'invoice_payment_events'
+      'invoice_payment_drafts', 'invoice_payment_events', 'drive_uploads', 'drive_upload_attempts'
     ]) assert.ok(tables.includes(table), `missing table ${table}`);
 
+    const driveDown = await migrateDown({ databasePath });
+    assert.equal(driveDown.version, 5);
     const invoiceDown = await migrateDown({ databasePath });
     assert.equal(invoiceDown.version, 4);
     const issuanceDown = await migrateDown({ databasePath });

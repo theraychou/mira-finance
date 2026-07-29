@@ -13,17 +13,17 @@ async function exists(relative) {
   }
 }
 
-test('Phase F7 keeps local document generation enabled while external integrations remain disabled', async () => {
+test('Phase F8 enables only the approved Drive integration while WhatsApp remains disabled', async () => {
   const foundation = JSON.parse(await readFile(path.join(repositoryRoot, 'config/foundation.json'), 'utf8'));
   assert.deepEqual(foundation.features, {
     database: true,
     documentGeneration: true,
-    googleDrive: false,
+    googleDrive: true,
     whatsApp: false
   });
 });
 
-test('F7 retains all six templates and all five reversible database migrations', async () => {
+test('F8 retains all six templates and all six reversible database migrations', async () => {
   assert.equal(await exists('data/migrations/001_initial.up.sql'), true);
   assert.equal(await exists('data/migrations/001_initial.down.sql'), true);
   assert.equal(await exists('data/migrations/002_registries.up.sql'), true);
@@ -34,8 +34,11 @@ test('F7 retains all six templates and all five reversible database migrations',
   assert.equal(await exists('data/migrations/004_quotation_issuance.down.sql'), true);
   assert.equal(await exists('data/migrations/005_invoice_workflow.up.sql'), true);
   assert.equal(await exists('data/migrations/005_invoice_workflow.down.sql'), true);
+  assert.equal(await exists('data/migrations/006_drive_uploads.up.sql'), true);
+  assert.equal(await exists('data/migrations/006_drive_uploads.down.sql'), true);
   assert.equal(await exists('schemas/quotation-draft.schema.json'), true);
   assert.equal(await exists('schemas/invoice-draft.schema.json'), true);
+  assert.equal(await exists('schemas/drive-folders.schema.json'), true);
   const currencies = ['myr', 'sgd', 'usd'];
   for (const currency of currencies) {
     const sourceFiles = await readdir(path.join(repositoryRoot, 'templates', 'source', currency));
@@ -51,6 +54,8 @@ test('source specification and sensitive runtime files are ignored', async () =>
     'OpenClaw_Finance_Agent.docx',
     'config/bank-profiles.json',
     'config/drive-folders.json',
+    'client_secret_*.json',
+    'downloads/',
     'data/*.sqlite3',
     'data/*.sqlite3-*',
     'templates/**/*.docx',

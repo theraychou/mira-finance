@@ -2,17 +2,16 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { runHealthCheck } from '../../scripts/health-check.mjs';
 
-test('health check passes with F7 local workflows and external integrations absent', async () => {
+test('health check passes with F8 Drive configuration and WhatsApp absent', async () => {
   const report = await runHealthCheck({ env: {} });
   assert.equal(report.healthy, true);
-  assert.equal(report.phase, 'F7');
+  assert.equal(report.phase, 'F8');
   const optional = report.checks.filter((item) => item.name.startsWith('optional:'));
   assert.equal(optional.length, 4);
   assert.equal(optional.find((item) => item.name === 'optional:document-templates').status, 'CONFIGURED');
   assert.notEqual(optional.find((item) => item.name === 'optional:database').status, 'FAIL');
-  assert.ok(optional
-    .filter((item) => !['optional:document-templates', 'optional:database'].includes(item.name))
-    .every((item) => item.status === 'NOT_CONFIGURED'));
+  assert.equal(optional.find((item) => item.name === 'optional:google-drive').status, 'CONFIGURED');
+  assert.equal(optional.find((item) => item.name === 'optional:whatsapp').status, 'NOT_CONFIGURED');
 });
 
 test('health check does not print or require credential values', async () => {

@@ -28,7 +28,7 @@
       "properties": {
         "agentId": {"type": "string", "const": "mira-finance"},
         "displayName": {"type": "string", "const": "Mira"},
-        "phase": {"type": "string", "const": "F7"}
+        "phase": {"type": "string", "const": "F8"}
       }
     },
     "workspace": {
@@ -53,7 +53,7 @@
       "properties": {
         "database": {"type": "string", "const": "configured"},
         "documentTemplates": {"type": "string", "const": "configured"},
-        "googleDrive": {"type": "string", "const": "not-configured"},
+        "googleDrive": {"type": "string", "const": "configured"},
         "whatsApp": {"type": "string", "const": "not-configured"}
       }
     }

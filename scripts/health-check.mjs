@@ -3,6 +3,7 @@ import { access, lstat, readFile, readdir, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { checkDatabase } from './check-database.mjs';
+import { loadDriveConfiguration } from './lib/drive-configuration.mjs';
 import { runValidation, repositoryRoot } from './validate-config.mjs';
 
 async function exists(candidate) {
@@ -101,7 +102,7 @@ export async function runHealthCheck({ root = repositoryRoot, env = process.env 
   let databaseStatus = 'NOT_CONFIGURED';
   if (databasePresent) {
     const databaseCheck = checkDatabase(path.join(root, 'data', 'finance.sqlite3'));
-    const schemaVersions = { F3: 1, F4: 2, F5: 3, F6: 4 };
+    const schemaVersions = { F3: 1, F4: 2, F5: 3, F6: 4, F7: 5, F8: 6 };
     const requiredSchemaVersion = schemaVersions[foundation.project.phase] ?? 1;
     const databaseReady = databaseCheck.ok && databaseCheck.schemaVersion >= requiredSchemaVersion;
     databaseStatus = databaseReady ? 'CONFIGURED' : 'FAIL';
@@ -114,7 +115,17 @@ export async function runHealthCheck({ root = repositoryRoot, env = process.env 
   const templateCount = await countFiles(path.join(root, 'templates', 'normalized'), '.docx');
   checks.push(check('optional:document-templates', templateCount === 6 ? 'CONFIGURED' : 'NOT_CONFIGURED', 'Phase F2'));
 
-  const driveConfigured = Boolean(env.MIRA_GOOGLE_IDENTITY && env.MIRA_DRIVE_ROOT_FOLDER_ID);
+  let driveConfigured = false;
+  if (await exists(path.join(root, 'config', 'drive-folders.json'))) {
+    try {
+      await loadDriveConfiguration({ root });
+      driveConfigured = true;
+    } catch {
+      driveConfigured = false;
+    }
+  } else {
+    driveConfigured = Boolean(env.MIRA_GOOGLE_IDENTITY && env.MIRA_DRIVE_ROOT_FOLDER_ID);
+  }
   checks.push(check('optional:google-drive', driveConfigured ? 'CONFIGURED' : 'NOT_CONFIGURED', 'Phase F8'));
 
   const groupConfigured = /^\d+@g\.us$/.test(env.MIRA_WHATSAPP_GROUP_ID ?? '');

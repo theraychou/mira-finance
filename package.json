@@ -17,6 +17,8 @@
     "templates:sample-myr": "node scripts/render-template-fixtures.mjs --fixture tests/fixtures/sample-myr-invoice.json --template invoice-myr --output-root generated/samples",
     "templates:sample-all": "node scripts/render-template-fixtures.mjs --fixture tests/fixtures/sample-two-item-all-currencies.json --output-root generated/samples-all",
     "invoices:render-qa": "node scripts/render-invoice-qa.mjs",
+    "drive:health": "node scripts/drive-health-check.mjs",
+    "drive:upload": "node scripts/drive-upload.mjs",
     "db:migrate": "node scripts/migrate-database.mjs",
     "db:migrate:down": "node scripts/migrate-database.mjs --down",
     "db:check": "node scripts/check-database.mjs",

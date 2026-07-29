@@ -7,6 +7,8 @@
 *.p12
 *.pfx
 credentials*.json
+client_secret_*.json
+downloads/
 token*.json
 
 # Dependencies and local tooling

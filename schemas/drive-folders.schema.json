@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "drive-folders.schema.json",
+  "title": "Mira approved Google Drive destinations",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "identity", "client", "rootFolderId", "destinations"],
+  "properties": {
+    "schemaVersion": {"const": 1},
+    "identity": {"type": "string", "format": "email"},
+    "client": {"type": "string", "pattern": "^[a-z][a-z0-9-]{1,31}$"},
+    "rootFolderId": {"type": "string", "pattern": "^[A-Za-z0-9_-]{10,128}$"},
+    "destinations": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["quotation", "invoice"],
+      "properties": {
+        "quotation": {"type": "string", "pattern": "^[A-Za-z0-9_-]{10,128}$"},
+        "invoice": {"type": "string", "pattern": "^[A-Za-z0-9_-]{10,128}$"}
+      }
+    }
+  }
+}

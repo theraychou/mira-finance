@@ -11,9 +11,9 @@ test('foundation configuration passes its schema', async () => {
 test('foundation schema rejects an enabled later-phase feature', async () => {
   const invalid = {
     database: true,
-    documentGeneration: false,
+    documentGeneration: true,
     googleDrive: true,
-    whatsApp: false
+    whatsApp: true
   };
   const result = await validateValueAgainstSchema(
     repositoryRoot,
@@ -27,8 +27,8 @@ test('foundation schema rejects an enabled later-phase feature', async () => {
 test('foundation schema rejects unrecognised feature flags', async () => {
   const invalid = {
     database: true,
-    documentGeneration: false,
-    googleDrive: false,
+    documentGeneration: true,
+    googleDrive: true,
     whatsApp: false,
     automaticEmailing: false
   };
