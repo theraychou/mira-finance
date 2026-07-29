@@ -1,0 +1,5 @@
+DROP INDEX quotation_issuances_status_idx;
+DROP TRIGGER quotation_issuance_attempts_no_delete;
+DROP TRIGGER quotation_issuance_attempts_no_update;
+DROP TABLE quotation_issuance_attempts;
+DROP TABLE quotation_issuances;

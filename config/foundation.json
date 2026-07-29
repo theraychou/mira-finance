@@ -4,7 +4,7 @@
   "project": {
     "agentId": "mira-finance",
     "displayName": "Mira",
-    "phase": "F5"
+    "phase": "F6"
   },
   "workspace": {
     "path": "/root/.workspaces/mira-finance",
@@ -12,7 +12,7 @@
   },
   "features": {
     "database": true,
-    "documentGeneration": false,
+    "documentGeneration": true,
     "googleDrive": false,
     "whatsApp": false
   },

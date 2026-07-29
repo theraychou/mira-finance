@@ -4,9 +4,9 @@ This repository contains the isolated workspace for Mira, the future OpenClaw Fi
 
 ## Current phase
 
-Phase F5 - Quotation Draft Engine.
+Phase F6 - Quotation Issuance.
 
-The workspace foundation, protected templates, SQLite ledger, numbering engine, controlled finance registries, and quotation-draft engine are present. Drafts use deterministic calculations, immutable versions, and expiring confirmation tokens. Mira is not registered as an OpenClaw agent and cannot issue finance documents. WhatsApp, Google Drive, official numbering, and production document generation remain intentionally unconfigured.
+The workspace foundation, protected templates, SQLite ledger, numbering engine, controlled finance registries, quotation drafts, and local quotation issuance are present. Confirmed quotations can be assigned an official number and rendered locally to immutable DOCX/PDF files. Mira is not registered as an OpenClaw agent. WhatsApp, Google Drive, customer sending, and non-quotation workflows remain intentionally unconfigured.
 
 ## Workspace
 

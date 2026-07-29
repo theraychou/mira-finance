@@ -35,7 +35,7 @@ function paragraphText(paragraph) {
   return [...paragraph.getElementsByTagName('w:t')].map((item) => item.textContent ?? '').join('').trim();
 }
 
-function compactLineItemRows(zip, itemCount, templateId) {
+export function compactLineItemRows(zip, itemCount, templateId) {
   if (!Number.isInteger(itemCount) || itemCount < 1 || itemCount > 7) {
     throw new Error(`${templateId}: line-item count must be between 1 and 7.`);
   }

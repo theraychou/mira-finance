@@ -153,6 +153,7 @@ async function validateTemplate(root, contract, template) {
   ]);
   assertEqual(source.length, template.sourceSize, `${template.id}: source size changed.`);
   assertEqual(sha256(source), template.sourceSha256, `${template.id}: protected source hash changed.`);
+  assertEqual(sha256(normalized), template.normalizedSha256, `${template.id}: normalized template hash changed.`);
 
   const sourcePackage = readDocumentXml(source);
   const normalizedPackage = readDocumentXml(normalized);
