@@ -5,7 +5,7 @@
   "description": "Isolated OpenClaw Finance Agent workspace foundation",
   "type": "module",
   "engines": {
-    "node": ">=22 <25"
+    "node": ">=24 <25"
   },
   "scripts": {
     "validate:config": "node scripts/validate-config.mjs",
@@ -16,6 +16,10 @@
     "templates:render-test": "node scripts/render-template-fixtures.mjs",
     "templates:sample-myr": "node scripts/render-template-fixtures.mjs --fixture tests/fixtures/sample-myr-invoice.json --template invoice-myr --output-root generated/samples",
     "templates:sample-all": "node scripts/render-template-fixtures.mjs --fixture tests/fixtures/sample-two-item-all-currencies.json --output-root generated/samples-all",
+    "db:migrate": "node scripts/migrate-database.mjs",
+    "db:migrate:down": "node scripts/migrate-database.mjs --down",
+    "db:check": "node scripts/check-database.mjs",
+    "db:backup": "node scripts/backup-database.mjs",
     "test": "node --test tests/unit/*.test.mjs tests/integration/*.test.mjs tests/regression/*.test.mjs"
   },
   "dependencies": {

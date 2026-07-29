@@ -10,7 +10,7 @@ test('foundation configuration passes its schema', async () => {
 
 test('foundation schema rejects an enabled later-phase feature', async () => {
   const invalid = {
-    database: false,
+    database: true,
     documentGeneration: false,
     googleDrive: true,
     whatsApp: false
@@ -26,7 +26,7 @@ test('foundation schema rejects an enabled later-phase feature', async () => {
 
 test('foundation schema rejects unrecognised feature flags', async () => {
   const invalid = {
-    database: false,
+    database: true,
     documentGeneration: false,
     googleDrive: false,
     whatsApp: false,
@@ -40,4 +40,3 @@ test('foundation schema rejects unrecognised feature flags', async () => {
   assert.equal(result.ok, false);
   assert.match(result.errors.join('\n'), /additional property/);
 });
-

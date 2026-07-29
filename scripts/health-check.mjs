@@ -2,6 +2,7 @@
 import { access, lstat, readFile, readdir, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { checkDatabase } from './check-database.mjs';
 import { runValidation, repositoryRoot } from './validate-config.mjs';
 
 async function exists(candidate) {
@@ -96,7 +97,16 @@ export async function runHealthCheck({ root = repositoryRoot, env = process.env 
   }
 
   const databasePresent = await exists(path.join(root, 'data', 'finance.sqlite3'));
-  checks.push(check('optional:database', databasePresent ? 'CONFIGURED' : 'NOT_CONFIGURED', 'Phase F3'));
+  let databaseDetail = 'Phase F3 runtime database is not initialised';
+  let databaseStatus = 'NOT_CONFIGURED';
+  if (databasePresent) {
+    const databaseCheck = checkDatabase(path.join(root, 'data', 'finance.sqlite3'));
+    databaseStatus = databaseCheck.ok ? 'CONFIGURED' : 'FAIL';
+    databaseDetail = databaseCheck.ok
+      ? `Phase F3 schema version ${databaseCheck.schemaVersion}; integrity passed`
+      : 'Phase F3 integrity check failed';
+  }
+  checks.push(check('optional:database', databaseStatus, databaseDetail));
 
   const templateCount = await countFiles(path.join(root, 'templates', 'normalized'), '.docx');
   checks.push(check('optional:document-templates', templateCount === 6 ? 'CONFIGURED' : 'NOT_CONFIGURED', 'Phase F2'));

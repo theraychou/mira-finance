@@ -13,18 +13,19 @@ async function exists(relative) {
   }
 }
 
-test('all later-phase feature flags remain disabled', async () => {
+test('only the Phase F3 database feature is enabled', async () => {
   const foundation = JSON.parse(await readFile(path.join(repositoryRoot, 'config/foundation.json'), 'utf8'));
   assert.deepEqual(foundation.features, {
-    database: false,
+    database: true,
     documentGeneration: false,
     googleDrive: false,
     whatsApp: false
   });
 });
 
-test('F2 has six source and normalized templates but no database', async () => {
-  assert.equal(await exists('data/finance.sqlite3'), false);
+test('F3 retains all six source and normalized templates and database migrations', async () => {
+  assert.equal(await exists('data/migrations/001_initial.up.sql'), true);
+  assert.equal(await exists('data/migrations/001_initial.down.sql'), true);
   const currencies = ['myr', 'sgd', 'usd'];
   for (const currency of currencies) {
     const sourceFiles = await readdir(path.join(repositoryRoot, 'templates', 'source', currency));
@@ -41,6 +42,7 @@ test('source specification and sensitive runtime files are ignored', async () =>
     'config/bank-profiles.json',
     'config/drive-folders.json',
     'data/*.sqlite3',
+    'data/*.sqlite3-*',
     'templates/**/*.docx',
     '.env'
   ]) {

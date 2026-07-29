@@ -20,6 +20,7 @@ node_modules/
 data/*.sqlite
 data/*.sqlite3
 data/*.sqlite-*
+data/*.sqlite3-*
 data/pending/*
 !data/pending/.gitkeep
 data/locks/*
