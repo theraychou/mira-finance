@@ -32,14 +32,14 @@ function allocateInWorker(workerData) {
   });
 }
 
-test('initial migration is reversible and creates the complete F3 ledger', async () => {
+test('database migrations are reversible and create the complete F4 ledger', async () => {
   const { directory, databasePath } = await temporaryLedger();
   try {
     assert.deepEqual(checkDatabase(databasePath), {
       ok: true,
       integrity: ['ok'],
       foreignKeyViolations: 0,
-      schemaVersion: 1
+      schemaVersion: 2
     });
     const database = openDatabase(databasePath, { readOnly: true });
     const tables = database.prepare("SELECT name FROM sqlite_master WHERE type = 'table'").all().map((row) => row.name);
@@ -47,9 +47,12 @@ test('initial migration is reversible and creates the complete F3 ledger', async
     for (const table of [
       'business_entities', 'customers', 'customer_aliases', 'quotations',
       'quotation_line_items', 'invoices', 'invoice_line_items', 'claims',
-      'pending_confirmations', 'audit_events', 'number_sequences', 'document_numbers'
+      'pending_confirmations', 'audit_events', 'number_sequences', 'document_numbers',
+      'currencies', 'bank_profiles', 'tax_rules'
     ]) assert.ok(tables.includes(table), `missing table ${table}`);
 
+    const registryDown = await migrateDown({ databasePath });
+    assert.equal(registryDown.version, 1);
     const down = await migrateDown({ databasePath });
     assert.equal(down.version, 0);
     const reverted = openDatabase(databasePath, { readOnly: true });

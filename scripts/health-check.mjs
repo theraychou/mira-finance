@@ -97,14 +97,16 @@ export async function runHealthCheck({ root = repositoryRoot, env = process.env 
   }
 
   const databasePresent = await exists(path.join(root, 'data', 'finance.sqlite3'));
-  let databaseDetail = 'Phase F3 runtime database is not initialised';
+  let databaseDetail = `${foundation.project.phase} runtime database is not initialised`;
   let databaseStatus = 'NOT_CONFIGURED';
   if (databasePresent) {
     const databaseCheck = checkDatabase(path.join(root, 'data', 'finance.sqlite3'));
-    databaseStatus = databaseCheck.ok ? 'CONFIGURED' : 'FAIL';
-    databaseDetail = databaseCheck.ok
-      ? `Phase F3 schema version ${databaseCheck.schemaVersion}; integrity passed`
-      : 'Phase F3 integrity check failed';
+    const requiredSchemaVersion = foundation.project.phase === 'F4' ? 2 : 1;
+    const databaseReady = databaseCheck.ok && databaseCheck.schemaVersion >= requiredSchemaVersion;
+    databaseStatus = databaseReady ? 'CONFIGURED' : 'FAIL';
+    databaseDetail = databaseReady
+      ? `${foundation.project.phase} schema version ${databaseCheck.schemaVersion}; integrity passed`
+      : `Database requires schema version ${requiredSchemaVersion} and a passing integrity check`;
   }
   checks.push(check('optional:database', databaseStatus, databaseDetail));
 

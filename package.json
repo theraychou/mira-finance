@@ -20,6 +20,7 @@
     "db:migrate:down": "node scripts/migrate-database.mjs --down",
     "db:check": "node scripts/check-database.mjs",
     "db:backup": "node scripts/backup-database.mjs",
+    "registry": "node scripts/finance-registry.mjs",
     "test": "node --test tests/unit/*.test.mjs tests/integration/*.test.mjs tests/regression/*.test.mjs"
   },
   "dependencies": {
