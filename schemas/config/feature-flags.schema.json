@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "feature-flags.schema.json",
-  "title": "Mira Finance Phase F3 feature flags",
+  "title": "Mira Finance Phase F5 feature flags",
   "type": "object",
   "additionalProperties": false,
   "required": ["database", "documentGeneration", "googleDrive", "whatsApp"],

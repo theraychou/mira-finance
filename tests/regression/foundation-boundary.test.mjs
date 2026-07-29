@@ -13,7 +13,7 @@ async function exists(relative) {
   }
 }
 
-test('only the Phase F4 database feature is enabled', async () => {
+test('only the Phase F5 database feature is enabled', async () => {
   const foundation = JSON.parse(await readFile(path.join(repositoryRoot, 'config/foundation.json'), 'utf8'));
   assert.deepEqual(foundation.features, {
     database: true,
@@ -23,11 +23,14 @@ test('only the Phase F4 database feature is enabled', async () => {
   });
 });
 
-test('F4 retains all six templates and both database migrations', async () => {
+test('F5 retains all six templates and all three reversible database migrations', async () => {
   assert.equal(await exists('data/migrations/001_initial.up.sql'), true);
   assert.equal(await exists('data/migrations/001_initial.down.sql'), true);
   assert.equal(await exists('data/migrations/002_registries.up.sql'), true);
   assert.equal(await exists('data/migrations/002_registries.down.sql'), true);
+  assert.equal(await exists('data/migrations/003_quotation_drafts.up.sql'), true);
+  assert.equal(await exists('data/migrations/003_quotation_drafts.down.sql'), true);
+  assert.equal(await exists('schemas/quotation-draft.schema.json'), true);
   const currencies = ['myr', 'sgd', 'usd'];
   for (const currency of currencies) {
     const sourceFiles = await readdir(path.join(repositoryRoot, 'templates', 'source', currency));

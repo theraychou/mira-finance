@@ -1,0 +1,5 @@
+DROP TRIGGER quotation_draft_versions_no_delete;
+DROP TRIGGER quotation_draft_versions_no_update;
+DROP INDEX quotation_draft_versions_quotation_idx;
+DROP TABLE quotation_draft_versions;
+DROP TABLE quotation_draft_state;

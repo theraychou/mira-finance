@@ -101,7 +101,8 @@ export async function runHealthCheck({ root = repositoryRoot, env = process.env 
   let databaseStatus = 'NOT_CONFIGURED';
   if (databasePresent) {
     const databaseCheck = checkDatabase(path.join(root, 'data', 'finance.sqlite3'));
-    const requiredSchemaVersion = foundation.project.phase === 'F4' ? 2 : 1;
+    const schemaVersions = { F3: 1, F4: 2, F5: 3 };
+    const requiredSchemaVersion = schemaVersions[foundation.project.phase] ?? 1;
     const databaseReady = databaseCheck.ok && databaseCheck.schemaVersion >= requiredSchemaVersion;
     databaseStatus = databaseReady ? 'CONFIGURED' : 'FAIL';
     databaseDetail = databaseReady
