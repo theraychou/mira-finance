@@ -1,5 +1,6 @@
 # Local environment and credentials
 .env
+openclaw-workspace-state.json
 .env.*
 !.env.example
 *.pem
