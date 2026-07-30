@@ -34,4 +34,4 @@ Before each phase: read the build specification and prior completion report, ins
 
 ## Phase F9 status
 
-Mira is registered as a separate OpenClaw agent with this dedicated workspace. Her skill allowlist contains only `mira-finance`; filesystem tools are workspace-only; general execution, messaging, session access, web access, and elevated tools remain unavailable. The sole approved executable is the no-argument finance health check. WhatsApp routing remains disabled until Phase F10.
+Mira is registered as a separate OpenClaw agent with this dedicated workspace. Her skill allowlist contains only `mira-finance`; filesystem tools are workspace-only; general execution, messaging, session access, web access, and elevated tools remain unavailable. Her only finance tool is the no-argument, read-only health check. WhatsApp routing remains disabled until Phase F10.

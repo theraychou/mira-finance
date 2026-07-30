@@ -1,0 +1,17 @@
+{
+  "id": "mira-finance-health",
+  "name": "Mira Finance Health",
+  "description": "Exposes one redacted, read-only health check for Mira.",
+  "contracts": {
+    "tools": [
+      "mira_finance_health"
+    ]
+  },
+  "activation": {
+    "onStartup": true
+  },
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false
+  }
+}

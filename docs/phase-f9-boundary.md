@@ -6,11 +6,11 @@
 - Dedicated workspace `/root/.workspaces/mira-finance`
 - Explicit per-agent skill allowlist containing only `mira-finance`
 - Workspace-only file reads and a deny-by-default command policy
-- One exact, no-argument finance health executable on the per-agent command allowlist
+- One no-argument, read-only finance health plugin tool
 - Disabled elevated, messaging, session, browser, gateway, node, and web tools
 - Configuration, skill visibility, workspace isolation, health, and existing-agent regression checks
 
-Docker is not installed on the host, so F9 uses OpenClaw's workspace-only filesystem guard plus its per-agent executable allowlist. The OpenClaw service continues to run under the existing OS account; this is application-level isolation, not a separate Unix user or container boundary.
+Docker is not installed on the host, so F9 uses OpenClaw's workspace-only filesystem guard and exposes no command-execution tool to Mira. The OpenClaw service continues to run under the existing OS account; this is application-level isolation, not a separate Unix user or container boundary.
 
 ## Explicitly not included
 

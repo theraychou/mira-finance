@@ -9,12 +9,13 @@
     "profile": "minimal",
     "allow": [
       "read",
-      "exec"
+      "mira_finance_health"
     ],
     "deny": [
       "write",
       "edit",
       "apply_patch",
+      "exec",
       "process",
       "browser",
       "gateway",
@@ -27,17 +28,6 @@
       "web_search",
       "web_fetch"
     ],
-    "exec": {
-      "host": "gateway",
-      "mode": "allowlist",
-      "security": "allowlist",
-      "ask": "off",
-      "strictInlineEval": true,
-      "applyPatch": {
-        "enabled": false,
-        "workspaceOnly": true
-      }
-    },
     "fs": {
       "workspaceOnly": true
     },
@@ -60,5 +50,5 @@
     "workspaceAccess": "rw",
     "scope": "agent"
   },
-  "approvedExecutable": "/root/.workspaces/mira-finance/bin/mira-finance-health"
+  "healthTool": "mira_finance_health"
 }
