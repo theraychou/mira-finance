@@ -13,7 +13,7 @@ async function exists(relative) {
   }
 }
 
-test('Phase F8 enables only the approved Drive integration while WhatsApp remains disabled', async () => {
+test('Phase F9 preserves the approved integrations while WhatsApp remains disabled', async () => {
   const foundation = JSON.parse(await readFile(path.join(repositoryRoot, 'config/foundation.json'), 'utf8'));
   assert.deepEqual(foundation.features, {
     database: true,
@@ -23,7 +23,7 @@ test('Phase F8 enables only the approved Drive integration while WhatsApp remain
   });
 });
 
-test('F8 retains all six templates and all six reversible database migrations', async () => {
+test('F9 retains all six templates and all six reversible database migrations', async () => {
   assert.equal(await exists('data/migrations/001_initial.up.sql'), true);
   assert.equal(await exists('data/migrations/001_initial.down.sql'), true);
   assert.equal(await exists('data/migrations/002_registries.up.sql'), true);

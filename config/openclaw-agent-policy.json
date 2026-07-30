@@ -1,0 +1,64 @@
+{
+  "agentId": "mira-finance",
+  "displayName": "Mira",
+  "workspace": "/root/.workspaces/mira-finance",
+  "skills": [
+    "mira-finance"
+  ],
+  "tools": {
+    "profile": "minimal",
+    "allow": [
+      "read",
+      "exec"
+    ],
+    "deny": [
+      "write",
+      "edit",
+      "apply_patch",
+      "process",
+      "browser",
+      "gateway",
+      "nodes",
+      "message",
+      "sessions_list",
+      "sessions_history",
+      "sessions_send",
+      "sessions_spawn",
+      "web_search",
+      "web_fetch"
+    ],
+    "exec": {
+      "host": "gateway",
+      "mode": "allowlist",
+      "security": "allowlist",
+      "ask": "off",
+      "strictInlineEval": true,
+      "applyPatch": {
+        "enabled": false,
+        "workspaceOnly": true
+      }
+    },
+    "fs": {
+      "workspaceOnly": true
+    },
+    "elevated": {
+      "enabled": false
+    },
+    "message": {
+      "allowCrossContextSend": false,
+      "crossContext": {
+        "allowWithinProvider": false,
+        "allowAcrossProviders": false
+      },
+      "broadcast": {
+        "enabled": false
+      }
+    }
+  },
+  "sandbox": {
+    "mode": "off",
+    "workspaceAccess": "rw",
+    "scope": "agent"
+  },
+  "approvedExecutable": "/root/.workspaces/mira-finance/bin/mira-finance-health"
+}

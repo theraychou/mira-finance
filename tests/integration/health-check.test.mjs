@@ -2,10 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { runHealthCheck } from '../../scripts/health-check.mjs';
 
-test('health check passes with F8 Drive configuration and WhatsApp absent', async () => {
+test('health check passes with F9 agent registration and WhatsApp absent', async () => {
   const report = await runHealthCheck({ env: {} });
   assert.equal(report.healthy, true);
-  assert.equal(report.phase, 'F8');
+  assert.equal(report.phase, 'F9');
   const optional = report.checks.filter((item) => item.name.startsWith('optional:'));
   assert.equal(optional.length, 4);
   assert.equal(optional.find((item) => item.name === 'optional:document-templates').status, 'CONFIGURED');

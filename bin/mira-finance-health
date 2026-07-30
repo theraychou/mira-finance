@@ -1,0 +1,28 @@
+#!/usr/bin/node
+import { runHealthCheck } from '../scripts/health-check.mjs';
+import { runDriveHealthCheck } from '../scripts/drive-health-check.mjs';
+
+if (process.argv.length !== 2) {
+  console.error('DENIED finance health check accepts no arguments');
+  process.exit(64);
+}
+
+const [workspace, drive] = await Promise.all([
+  runHealthCheck(),
+  runDriveHealthCheck()
+]);
+
+const report = {
+  healthy: workspace.healthy && drive.healthy,
+  phase: workspace.phase,
+  checks: {
+    workspace: workspace.healthy ? 'PASS' : 'FAIL',
+    database: workspace.checks.find((item) => item.name === 'optional:database')?.status ?? 'FAIL',
+    templates: workspace.checks.find((item) => item.name === 'optional:document-templates')?.status ?? 'FAIL',
+    googleDrive: drive.healthy ? 'PASS' : 'FAIL',
+    whatsApp: 'NOT_CONFIGURED'
+  }
+};
+
+console.log(JSON.stringify(report));
+if (!report.healthy) process.exitCode = 1;

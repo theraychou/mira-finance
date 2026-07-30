@@ -32,6 +32,6 @@ This is the isolated repository and future workspace for OpenClaw Finance Agent 
 
 Before each phase: read the build specification and prior completion report, inspect relevant files, rerun the previous acceptance checks, inspect Git state, and back up anything that will change. Then implement only the current phase, run focused and regression tests, and provide the standard completion report.
 
-## Phase F2 status
+## Phase F9 status
 
-F2 inventories and normalises six protected quotation/invoice templates. Original template hashes are immutable, account details remain inside ignored DOCX files, test data is synthetic, and every test output must display `TEST / NOT VALID`. All operational feature flags remain disabled.
+Mira is registered as a separate OpenClaw agent with this dedicated workspace. Her skill allowlist contains only `mira-finance`; filesystem tools are workspace-only; general execution, messaging, session access, web access, and elevated tools remain unavailable. The sole approved executable is the no-argument finance health check. WhatsApp routing remains disabled until Phase F10.
