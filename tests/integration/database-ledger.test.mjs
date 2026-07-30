@@ -13,6 +13,7 @@ import {
   formatDocumentNumber,
   updateDocumentNumberStatus
 } from '../../scripts/lib/numbering.mjs';
+import { verifyLedgerEquivalence } from '../../scripts/verify-ledger-equivalence.mjs';
 
 async function temporaryLedger() {
   const directory = await mkdtemp(path.join(os.tmpdir(), 'mira-f3-'));
@@ -193,6 +194,7 @@ test('audit events are append-only and SQLite-safe backups restore cleanly', asy
     const restored = openDatabase(backupPath, { readOnly: true });
     assert.equal(restored.prepare('SELECT COUNT(*) AS count FROM audit_events').get().count, 1);
     restored.close();
+    assert.equal(verifyLedgerEquivalence(databasePath, backupPath).tableCount, 28);
   } finally {
     await rm(directory, { recursive: true, force: true });
   }
