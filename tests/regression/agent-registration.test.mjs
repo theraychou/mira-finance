@@ -10,7 +10,7 @@ test('F9 policy isolates Mira and exposes only finance health capabilities', asy
   assert.equal(policy.displayName, 'Mira');
   assert.equal(policy.workspace, '/root/.workspaces/mira-finance');
   assert.deepEqual(policy.skills, ['mira-finance']);
-  assert.deepEqual(policy.tools.allow, ['read', 'mira_finance_health']);
+  assert.deepEqual(policy.tools.alsoAllow, ['read', 'mira_finance_health']);
   assert.equal(policy.tools.fs.workspaceOnly, true);
   assert.equal(policy.tools.elevated.enabled, false);
   assert.equal(policy.tools.message.allowCrossContextSend, false);

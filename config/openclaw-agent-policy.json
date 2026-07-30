@@ -7,7 +7,7 @@
   ],
   "tools": {
     "profile": "minimal",
-    "allow": [
+    "alsoAllow": [
       "read",
       "mira_finance_health"
     ],
