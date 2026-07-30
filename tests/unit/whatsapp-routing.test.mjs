@@ -7,6 +7,7 @@ import {
   createWhatsAppRoutingConfiguration,
   loadWhatsAppRoutingConfiguration
 } from '../../scripts/lib/whatsapp-routing.mjs';
+import { verifyOpenClawF10 } from '../../scripts/verify-openclaw-f10.mjs';
 
 const GROUP_ID = '120000000000000000@g.us';
 const RAY = '+601100000000';
@@ -75,4 +76,24 @@ test('F10 patch refuses to overwrite an existing group or conflicting binding', 
     routingConfiguration,
     openClawConfiguration: { bindings: [], channels: { whatsapp: { groups: { [GROUP_ID]: {} } } } }
   }), /refusing to overwrite/);
+});
+
+test('F10 verification proves prior routes and unrelated configuration are preserved', () => {
+  const routing = createWhatsAppRoutingConfiguration({ groupId: GROUP_ID, authorizedSender: RAY });
+  const before = {
+    meta: { lastTouchedAt: 'before' },
+    agents: { list: [{ id: 'main' }, { id: 'mira-finance' }] },
+    bindings: [{ agentId: 'main', match: { channel: 'whatsapp', peer: { kind: 'group', id: '120000000000000099@g.us' } } }],
+    channels: { whatsapp: { groupPolicy: 'allowlist', groups: { '120000000000000099@g.us': { requireMention: true } } } }
+  };
+  const patch = createOpenClawF10Patch({ openClawConfiguration: before, routingConfiguration: routing });
+  const current = structuredClone(before);
+  current.meta.lastTouchedAt = 'after';
+  current.bindings = patch.bindings;
+  current.channels.whatsapp.groups = { ...before.channels.whatsapp.groups, ...patch.channels.whatsapp.groups };
+  assert.deepEqual(verifyOpenClawF10({ before, current, routing }), {
+    priorBindings: 1, currentBindings: 2, priorGroups: 1, currentGroups: 2
+  });
+  current.channels.whatsapp.groupPolicy = 'open';
+  assert.throws(() => verifyOpenClawF10({ before, current, routing }), /Unrelated OpenClaw configuration changed/);
 });
