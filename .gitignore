@@ -30,6 +30,8 @@ data/locks/*
 !data/locks/.gitkeep
 data/backups/*
 !data/backups/.gitkeep
+data/pilots/*
+!data/pilots/.gitkeep
 
 # Generated and logged output
 generated/*

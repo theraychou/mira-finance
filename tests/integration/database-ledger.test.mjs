@@ -130,6 +130,25 @@ test('concurrent allocations remain unique and use the approved daily format', a
   }
 });
 
+test('quotation and invoice numbers share one collision-free daily sequence', async () => {
+  const { directory, databasePath } = await temporaryLedger();
+  try {
+    const quotation = allocateDocumentNumber({
+      databasePath, documentType: 'quotation', sequenceDate: '2026-07-30',
+      clientInitials: 'FM', now: '2026-07-30T00:00:00.000Z'
+    });
+    const invoice = allocateDocumentNumber({
+      databasePath, documentType: 'invoice', sequenceDate: '2026-07-30',
+      clientInitials: 'FM', now: '2026-07-30T00:01:00.000Z'
+    });
+    assert.equal(quotation.documentNumber, '2607301001-FM');
+    assert.equal(invoice.documentNumber, '2607301002-FM');
+    assert.notEqual(quotation.documentNumber, invoice.documentNumber);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
 test('failed and cancelled allocations retain their numbers and are never reused', async () => {
   const { directory, databasePath } = await temporaryLedger();
   try {

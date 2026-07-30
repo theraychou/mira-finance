@@ -42,9 +42,14 @@ export function allocateDocumentNumberInTransaction(database, {
   const sequence = database.prepare(`
     SELECT next_value FROM number_sequences WHERE document_type = ? AND sequence_date = ?
   `).get(documentType, sequenceDate);
+  const globalNext = database.prepare(`
+    SELECT COALESCE(MAX(sequence_value) + 1, 1001) AS next_value
+    FROM document_numbers WHERE sequence_date = ?
+  `).get(sequenceDate).next_value;
+  const sequenceValue = Math.max(sequence.next_value, globalNext);
   const documentNumber = formatDocumentNumber({
     sequenceDate,
-    sequenceValue: sequence.next_value,
+    sequenceValue,
     clientInitials
   });
   const result = database.prepare(`
@@ -52,16 +57,16 @@ export function allocateDocumentNumberInTransaction(database, {
       document_type, sequence_date, sequence_value, client_initials,
       document_number, status, allocated_at, updated_at
     ) VALUES (?, ?, ?, ?, ?, 'ALLOCATED', ?, ?)
-  `).run(documentType, sequenceDate, sequence.next_value, clientInitials, documentNumber, now, now);
+  `).run(documentType, sequenceDate, sequenceValue, clientInitials, documentNumber, now, now);
   database.prepare(`
     UPDATE number_sequences SET next_value = ?, updated_at = ?
     WHERE document_type = ? AND sequence_date = ? AND next_value = ?
-  `).run(sequence.next_value + 1, now, documentType, sequenceDate, sequence.next_value);
+  `).run(sequenceValue + 1, now, documentType, sequenceDate, sequence.next_value);
   return {
     id: Number(result.lastInsertRowid),
     documentType,
     documentNumber,
-    sequenceValue: sequence.next_value,
+    sequenceValue,
     status: 'ALLOCATED'
   };
 }

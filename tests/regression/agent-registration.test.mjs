@@ -4,7 +4,7 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { repositoryRoot } from '../../scripts/validate-config.mjs';
 
-test('F10 policy isolates Mira and exposes only finance health capabilities', async () => {
+test('F11 policy isolates Mira and exposes only finance health capabilities', async () => {
   const policy = JSON.parse(await readFile(path.join(repositoryRoot, 'config/openclaw-agent-policy.json'), 'utf8'));
   assert.equal(policy.agentId, 'mira-finance');
   assert.equal(policy.displayName, 'Mira');

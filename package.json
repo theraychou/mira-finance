@@ -21,6 +21,7 @@
     "drive:upload": "node scripts/drive-upload.mjs",
     "whatsapp:configure": "node scripts/configure-whatsapp-routing.mjs",
     "whatsapp:verify": "node scripts/verify-openclaw-f10.mjs",
+    "pilot:f11": "node scripts/run-f11-pilot.mjs",
     "db:migrate": "node scripts/migrate-database.mjs",
     "db:migrate:down": "node scripts/migrate-database.mjs --down",
     "db:check": "node scripts/check-database.mjs",

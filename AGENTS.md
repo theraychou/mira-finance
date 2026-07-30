@@ -32,6 +32,6 @@ This is the isolated repository and future workspace for OpenClaw Finance Agent 
 
 Before each phase: read the build specification and prior completion report, inspect relevant files, rerun the previous acceptance checks, inspect Git state, and back up anything that will change. Then implement only the current phase, run focused and regression tests, and provide the standard completion report.
 
-## Phase F10 status
+## Phase F11 status
 
-Mira is registered as a separate OpenClaw agent and only the dedicated `RC Finance` WhatsApp group may route to her. In F10, Ray is the sole authorised sender for draft and confirmation actions. Other senders fail closed. Command-source identifiers are retained only as deterministic fingerprints. General execution, outbound messaging tools, cross-session access, web access, and elevated tools remain unavailable.
+Mira remains isolated and only the dedicated `RC Finance` WhatsApp group routes to her. F11 adds a controlled, administrator-run end-to-end pilot using synthetic `TEST / NOT VALID` data in a separate pilot ledger. The pilot covers quotations, invoices, Drive filing, confirmed payment status, and a currency-separated monthly test report. It does not expose new tools to WhatsApp or use production customer data.
