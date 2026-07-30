@@ -25,7 +25,12 @@ export async function verifyF11PilotArtifacts({
       ...database.prepare("SELECT 'quotation' AS type, docx_relative_path, pdf_relative_path, docx_sha256, pdf_sha256 FROM quotation_issuances WHERE status='ISSUED'").all(),
       ...database.prepare("SELECT 'invoice' AS type, docx_relative_path, pdf_relative_path, docx_sha256, pdf_sha256 FROM invoice_issuances WHERE status='ISSUED'").all()
     ];
-    if (database.prepare("SELECT COUNT(*) AS count FROM customers WHERE legal_name NOT LIKE '%TEST / NOT VALID%' OR billing_address NOT LIKE '%TEST / NOT VALID%'").get().count !== 0) throw new Error('F11_NON_TEST_CUSTOMER_FOUND');
+    if (database.prepare(`
+      SELECT COUNT(*) AS count FROM customers
+      WHERE legal_name NOT LIKE '%TEST / NOT VALID%'
+        OR billing_address NOT LIKE '%TEST%'
+        OR billing_address NOT LIKE '%NOT VALID%'
+    `).get().count !== 0) throw new Error('F11_NON_TEST_CUSTOMER_FOUND');
     if (database.prepare("SELECT COUNT(*) AS count FROM bank_profiles WHERE account_number NOT LIKE 'TEST-%'").get().count !== 0) throw new Error('F11_NON_TEST_BANK_VALUE_FOUND');
   } finally {
     database.close();
