@@ -30,7 +30,7 @@ test('finance health executable rejects arguments and contains no secret materia
 
 test('finance health plugin declares one no-argument tool', async () => {
   const manifest = JSON.parse(await readFile(path.join(repositoryRoot, 'extensions/mira-finance-health/openclaw.plugin.json'), 'utf8'));
-  const source = await readFile(path.join(repositoryRoot, 'extensions/mira-finance-health/index.ts'), 'utf8');
+  const source = await readFile(path.join(repositoryRoot, 'extensions/mira-finance-health/index.js'), 'utf8');
   assert.deepEqual(manifest.contracts.tools, ['mira_finance_health']);
   assert.match(source, /additionalProperties: false/);
   assert.doesNotMatch(source, /child_process|execFile|spawn|client_secret|refresh_token|private_key/i);
