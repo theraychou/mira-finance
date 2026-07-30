@@ -135,7 +135,7 @@ export async function runHealthCheck({ root = repositoryRoot, env = process.env 
   return { healthy, phase: foundation.project.phase, checks };
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+async function main() {
   const report = await runHealthCheck();
   if (process.argv.includes('--json')) {
     console.log(JSON.stringify(report, null, 2));
@@ -144,4 +144,11 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     for (const item of report.checks) console.log(`${item.status.padEnd(14)} ${item.name} - ${item.detail}`);
   }
   if (!report.healthy) process.exitCode = 1;
+}
+
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  main().catch((error) => {
+    console.error(`FAIL Mira Finance health check failed (${error?.code ?? 'HEALTH_ERROR'})`);
+    process.exitCode = 1;
+  });
 }

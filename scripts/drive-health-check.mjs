@@ -15,8 +15,12 @@ export async function runDriveHealthCheck({root=repositoryRoot,configuration,cli
   }catch(error){return{healthy:false,status:'FAIL',detail:`Drive health check failed (${typeof error?.code==='string'?error.code:'DRIVE_CONFIGURATION_INVALID'}).`};}
 }
 
-if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){
+async function main(){
   const report=await runDriveHealthCheck();
   console.log(process.argv.includes('--json')?JSON.stringify(report):`${report.healthy?'PASS':'FAIL'} ${report.detail}`);
   if(!report.healthy)process.exitCode=1;
+}
+
+if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){
+  main().catch(()=>{console.error('FAIL Drive health check failed (DRIVE_HEALTH_ERROR).');process.exitCode=1;});
 }
