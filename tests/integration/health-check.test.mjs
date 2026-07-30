@@ -2,16 +2,19 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { runHealthCheck } from '../../scripts/health-check.mjs';
 
-test('health check passes with F9 agent registration and WhatsApp absent', async () => {
-  const report = await runHealthCheck({ env: {} });
+test('health check passes with F10 WhatsApp routing configured', async () => {
+  const report = await runHealthCheck({ env: {
+    MIRA_WHATSAPP_GROUP_ID: '120000000000000000@g.us',
+    MIRA_WHATSAPP_AUTHORIZED_SENDER: '+601100000000'
+  } });
   assert.equal(report.healthy, true);
-  assert.equal(report.phase, 'F9');
+  assert.equal(report.phase, 'F10');
   const optional = report.checks.filter((item) => item.name.startsWith('optional:'));
   assert.equal(optional.length, 4);
   assert.equal(optional.find((item) => item.name === 'optional:document-templates').status, 'CONFIGURED');
   assert.notEqual(optional.find((item) => item.name === 'optional:database').status, 'FAIL');
   assert.equal(optional.find((item) => item.name === 'optional:google-drive').status, 'CONFIGURED');
-  assert.equal(optional.find((item) => item.name === 'optional:whatsapp').status, 'NOT_CONFIGURED');
+  assert.equal(optional.find((item) => item.name === 'optional:whatsapp').status, 'CONFIGURED');
 });
 
 test('health check does not print or require credential values', async () => {

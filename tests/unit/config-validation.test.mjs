@@ -8,12 +8,12 @@ test('foundation configuration passes its schema', async () => {
   assert.equal(result.ok, true, result.errors.join('\n'));
 });
 
-test('foundation schema rejects an enabled later-phase feature', async () => {
+test('foundation schema rejects disabling the approved F10 WhatsApp feature', async () => {
   const invalid = {
     database: true,
     documentGeneration: true,
     googleDrive: true,
-    whatsApp: true
+    whatsApp: false
   };
   const result = await validateValueAgainstSchema(
     repositoryRoot,

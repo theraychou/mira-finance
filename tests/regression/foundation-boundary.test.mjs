@@ -13,17 +13,17 @@ async function exists(relative) {
   }
 }
 
-test('Phase F9 preserves the approved integrations while WhatsApp remains disabled', async () => {
+test('Phase F10 enables only the approved WhatsApp routing integration', async () => {
   const foundation = JSON.parse(await readFile(path.join(repositoryRoot, 'config/foundation.json'), 'utf8'));
   assert.deepEqual(foundation.features, {
     database: true,
     documentGeneration: true,
     googleDrive: true,
-    whatsApp: false
+    whatsApp: true
   });
 });
 
-test('F9 retains all six templates and all six reversible database migrations', async () => {
+test('F10 retains all six templates and all six reversible database migrations', async () => {
   assert.equal(await exists('data/migrations/001_initial.up.sql'), true);
   assert.equal(await exists('data/migrations/001_initial.down.sql'), true);
   assert.equal(await exists('data/migrations/002_registries.up.sql'), true);
@@ -54,6 +54,7 @@ test('source specification and sensitive runtime files are ignored', async () =>
     'OpenClaw_Finance_Agent.docx',
     'config/bank-profiles.json',
     'config/drive-folders.json',
+    'config/whatsapp-routing.json',
     'client_secret_*.json',
     'downloads/',
     'data/*.sqlite3',

@@ -4,6 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { checkDatabase } from './check-database.mjs';
 import { loadDriveConfiguration } from './lib/drive-configuration.mjs';
+import { loadWhatsAppRoutingConfiguration } from './lib/whatsapp-routing.mjs';
 import { runValidation, repositoryRoot } from './validate-config.mjs';
 
 async function exists(candidate) {
@@ -102,7 +103,7 @@ export async function runHealthCheck({ root = repositoryRoot, env = process.env 
   let databaseStatus = 'NOT_CONFIGURED';
   if (databasePresent) {
     const databaseCheck = checkDatabase(path.join(root, 'data', 'finance.sqlite3'));
-    const schemaVersions = { F3: 1, F4: 2, F5: 3, F6: 4, F7: 5, F8: 6, F9: 6 };
+    const schemaVersions = { F3: 1, F4: 2, F5: 3, F6: 4, F7: 5, F8: 6, F9: 6, F10: 6 };
     const requiredSchemaVersion = schemaVersions[foundation.project.phase] ?? 1;
     const databaseReady = databaseCheck.ok && databaseCheck.schemaVersion >= requiredSchemaVersion;
     databaseStatus = databaseReady ? 'CONFIGURED' : 'FAIL';
@@ -128,8 +129,14 @@ export async function runHealthCheck({ root = repositoryRoot, env = process.env 
   }
   checks.push(check('optional:google-drive', driveConfigured ? 'CONFIGURED' : 'NOT_CONFIGURED', 'Phase F8'));
 
-  const groupConfigured = /^\d+@g\.us$/.test(env.MIRA_WHATSAPP_GROUP_ID ?? '');
-  checks.push(check('optional:whatsapp', groupConfigured ? 'CONFIGURED' : 'NOT_CONFIGURED', 'Phase F10'));
+  let whatsAppConfigured = false;
+  try {
+    await loadWhatsAppRoutingConfiguration({ root, env });
+    whatsAppConfigured = true;
+  } catch {
+    whatsAppConfigured = false;
+  }
+  checks.push(check('optional:whatsapp', whatsAppConfigured ? 'CONFIGURED' : 'FAIL', 'Phase F10'));
 
   const healthy = !checks.some((item) => item.status === 'FAIL');
   return { healthy, phase: foundation.project.phase, checks };

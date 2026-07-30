@@ -32,6 +32,6 @@ This is the isolated repository and future workspace for OpenClaw Finance Agent 
 
 Before each phase: read the build specification and prior completion report, inspect relevant files, rerun the previous acceptance checks, inspect Git state, and back up anything that will change. Then implement only the current phase, run focused and regression tests, and provide the standard completion report.
 
-## Phase F9 status
+## Phase F10 status
 
-Mira is registered as a separate OpenClaw agent with this dedicated workspace. Her skill allowlist contains only `mira-finance`; filesystem tools are workspace-only; general execution, messaging, session access, web access, and elevated tools remain unavailable. Her only finance tool is the no-argument, read-only health check. WhatsApp routing remains disabled until Phase F10.
+Mira is registered as a separate OpenClaw agent and only the dedicated `RC Finance` WhatsApp group may route to her. In F10, Ray is the sole authorised sender for draft and confirmation actions. Other senders fail closed. Command-source identifiers are retained only as deterministic fingerprints. General execution, outbound messaging tools, cross-session access, web access, and elevated tools remain unavailable.

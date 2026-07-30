@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "whatsapp-routing.schema.json",
+  "title": "Mira Finance WhatsApp routing configuration",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$schema", "schemaVersion", "channel", "group", "authorizedSenders", "activation", "metadataRetention"],
+  "properties": {
+    "$schema": {"type": "string", "const": "../schemas/whatsapp-routing.schema.json"},
+    "schemaVersion": {"type": "integer", "const": 1},
+    "channel": {"type": "string", "const": "whatsapp"},
+    "group": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["displayName", "id", "requireMention"],
+      "properties": {
+        "displayName": {"type": "string", "const": "RC Finance"},
+        "id": {"type": "string", "pattern": "^[0-9]{10,24}@g\\.us$"},
+        "requireMention": {"type": "boolean"}
+      }
+    },
+    "authorizedSenders": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["label", "e164", "permissions"],
+        "properties": {
+          "label": {"type": "string"},
+          "e164": {"type": "string", "pattern": "^\\+[1-9][0-9]{7,14}$"},
+          "permissions": {
+            "type": "array",
+            "items": {"type": "string", "enum": ["draft", "confirm"]}
+          }
+        }
+      }
+    },
+    "activation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode"],
+      "properties": {
+        "mode": {"type": "string", "enum": ["dedicated-group", "mention-required"]}
+      }
+    },
+    "metadataRetention": {"type": "string", "const": "fingerprints-only"}
+  }
+}

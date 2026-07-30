@@ -47,6 +47,7 @@ config/bank-profiles.json
 config/business-entities.json
 config/customers.json
 config/drive-folders.json
+config/whatsapp-routing.json
 templates/**/*.docx
 templates/**/*.dotx
 

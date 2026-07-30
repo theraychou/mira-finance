@@ -1,0 +1,21 @@
+{
+  "$schema": "../schemas/whatsapp-routing.schema.json",
+  "schemaVersion": 1,
+  "channel": "whatsapp",
+  "group": {
+    "displayName": "RC Finance",
+    "id": "120000000000000000@g.us",
+    "requireMention": false
+  },
+  "authorizedSenders": [
+    {
+      "label": "Ray",
+      "e164": "+601100000000",
+      "permissions": ["draft", "confirm"]
+    }
+  ],
+  "activation": {
+    "mode": "dedicated-group"
+  },
+  "metadataRetention": "fingerprints-only"
+}

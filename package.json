@@ -19,6 +19,7 @@
     "invoices:render-qa": "node scripts/render-invoice-qa.mjs",
     "drive:health": "node scripts/drive-health-check.mjs",
     "drive:upload": "node scripts/drive-upload.mjs",
+    "whatsapp:configure": "node scripts/configure-whatsapp-routing.mjs",
     "db:migrate": "node scripts/migrate-database.mjs",
     "db:migrate:down": "node scripts/migrate-database.mjs --down",
     "db:check": "node scripts/check-database.mjs",
