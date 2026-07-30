@@ -4,7 +4,7 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { repositoryRoot } from '../../scripts/validate-config.mjs';
 
-test('F9 policy isolates Mira and exposes only finance health capabilities', async () => {
+test('F10 policy isolates Mira and exposes only finance health capabilities', async () => {
   const policy = JSON.parse(await readFile(path.join(repositoryRoot, 'config/openclaw-agent-policy.json'), 'utf8'));
   assert.equal(policy.agentId, 'mira-finance');
   assert.equal(policy.displayName, 'Mira');
@@ -33,5 +33,7 @@ test('finance health plugin declares one no-argument tool', async () => {
   const source = await readFile(path.join(repositoryRoot, 'extensions/mira-finance-health/index.js'), 'utf8');
   assert.deepEqual(manifest.contracts.tools, ['mira_finance_health']);
   assert.match(source, /additionalProperties: false/);
+  assert.match(source, /name === 'optional:whatsapp'/);
+  assert.doesNotMatch(source, /whatsApp:\s*'NOT_CONFIGURED'/);
   assert.doesNotMatch(source, /child_process|execFile|spawn|client_secret|refresh_token|private_key/i);
 });

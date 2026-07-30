@@ -28,7 +28,7 @@ export default definePluginEntry({
             database: workspace.checks.find((item) => item.name === 'optional:database')?.status ?? 'FAIL',
             templates: workspace.checks.find((item) => item.name === 'optional:document-templates')?.status ?? 'FAIL',
             googleDrive: drive.healthy ? 'PASS' : 'FAIL',
-            whatsApp: 'NOT_CONFIGURED'
+            whatsApp: workspace.checks.find((item) => item.name === 'optional:whatsapp')?.status ?? 'FAIL'
           }
         };
         return {
