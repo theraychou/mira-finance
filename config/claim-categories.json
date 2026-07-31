@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "categories": [
+    {"id": "travel", "label": "Travel", "terms": ["airline", "flight", "hotel"]},
+    {"id": "meals", "label": "Meals", "terms": ["cafe", "coffee", "restaurant"]},
+    {"id": "transport", "label": "Transport", "terms": ["grab", "parking", "taxi", "toll"]},
+    {"id": "software", "label": "Software", "terms": ["subscription", "software"]},
+    {"id": "office", "label": "Office", "terms": ["office", "stationery"]},
+    {"id": "professional-services", "label": "Professional Services", "terms": ["consulting", "legal"]},
+    {"id": "other", "label": "Other", "terms": []}
+  ]
+}
+

@@ -13,17 +13,18 @@ async function exists(relative) {
   }
 }
 
-test('Phase F11 preserves the approved integrations for the isolated pilot', async () => {
+test('Phase F12 preserves approved integrations and enables only claims', async () => {
   const foundation = JSON.parse(await readFile(path.join(repositoryRoot, 'config/foundation.json'), 'utf8'));
   assert.deepEqual(foundation.features, {
     database: true,
     documentGeneration: true,
     googleDrive: true,
-    whatsApp: true
+    whatsApp: true,
+    claims: true
   });
 });
 
-test('F11 retains all six templates and all six reversible database migrations', async () => {
+test('F12 retains all six templates and all seven reversible database migrations', async () => {
   assert.equal(await exists('data/migrations/001_initial.up.sql'), true);
   assert.equal(await exists('data/migrations/001_initial.down.sql'), true);
   assert.equal(await exists('data/migrations/002_registries.up.sql'), true);
@@ -36,9 +37,12 @@ test('F11 retains all six templates and all six reversible database migrations',
   assert.equal(await exists('data/migrations/005_invoice_workflow.down.sql'), true);
   assert.equal(await exists('data/migrations/006_drive_uploads.up.sql'), true);
   assert.equal(await exists('data/migrations/006_drive_uploads.down.sql'), true);
+  assert.equal(await exists('data/migrations/007_claim_receipts.up.sql'), true);
+  assert.equal(await exists('data/migrations/007_claim_receipts.down.sql'), true);
   assert.equal(await exists('schemas/quotation-draft.schema.json'), true);
   assert.equal(await exists('schemas/invoice-draft.schema.json'), true);
   assert.equal(await exists('schemas/drive-folders.schema.json'), true);
+  assert.equal(await exists('schemas/claim-draft.schema.json'), true);
   const currencies = ['myr', 'sgd', 'usd'];
   for (const currency of currencies) {
     const sourceFiles = await readdir(path.join(repositoryRoot, 'templates', 'source', currency));
@@ -56,6 +60,8 @@ test('source specification and sensitive runtime files are ignored', async () =>
     'config/drive-folders.json',
     'config/whatsapp-routing.json',
     'data/pilots/*',
+    'data/claims/inbox/*',
+    'data/claims/originals/*',
     'client_secret_*.json',
     'downloads/',
     'data/*.sqlite3',

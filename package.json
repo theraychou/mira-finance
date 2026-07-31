@@ -23,6 +23,7 @@
     "whatsapp:verify": "node scripts/verify-openclaw-f10.mjs",
     "pilot:f11": "node scripts/run-f11-pilot.mjs",
     "pilot:f11:verify": "node scripts/verify-f11-pilot.mjs",
+    "claims": "node scripts/claim-receipt.mjs",
     "db:verify-equivalent": "node scripts/verify-ledger-equivalence.mjs",
     "db:migrate": "node scripts/migrate-database.mjs",
     "db:migrate:down": "node scripts/migrate-database.mjs --down",

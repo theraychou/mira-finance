@@ -4,7 +4,7 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { repositoryRoot } from '../../scripts/validate-config.mjs';
 
-test('F11 policy isolates Mira and exposes only finance health capabilities', async () => {
+test('F12 policy isolates Mira and keeps claim mutations outside WhatsApp tools', async () => {
   const policy = JSON.parse(await readFile(path.join(repositoryRoot, 'config/openclaw-agent-policy.json'), 'utf8'));
   assert.equal(policy.agentId, 'mira-finance');
   assert.equal(policy.displayName, 'Mira');
@@ -36,4 +36,14 @@ test('finance health plugin declares one no-argument tool', async () => {
   assert.match(source, /name === 'optional:whatsapp'/);
   assert.doesNotMatch(source, /whatsApp:\s*'NOT_CONFIGURED'/);
   assert.doesNotMatch(source, /child_process|execFile|spawn|client_secret|refresh_token|private_key/i);
+});
+
+test('claim administrator CLI is fail-closed and not declared as an OpenClaw tool', async () => {
+  const executable = await readFile(path.join(repositoryRoot, 'scripts/claim-receipt.mjs'), 'utf8');
+  const manifest = JSON.parse(await readFile(path.join(repositoryRoot, 'extensions/mira-finance-health/openclaw.plugin.json'), 'utf8'));
+  assert.match(executable, /--admin/);
+  assert.match(executable, /data.*claims.*inbox/);
+  assert.match(executable, /data.*pending/);
+  assert.doesNotMatch(executable, /\/root\/clawd|client_secret|refresh_token|private_key/i);
+  assert.deepEqual(manifest.contracts.tools, ['mira_finance_health']);
 });

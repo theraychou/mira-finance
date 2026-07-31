@@ -49,11 +49,12 @@ async function validateNode(value, schema, context, pointer = '') {
   }
 
   if (schema.type) {
-    if (!supportedTypes.has(schema.type)) {
+    const types = Array.isArray(schema.type) ? schema.type : [schema.type];
+    if (types.length === 0 || types.some((type) => !supportedTypes.has(type))) {
       return [`${pointer || '/'}: schema uses unsupported type`];
     }
-    if (!typeMatches(value, schema.type)) {
-      return [`${pointer || '/'}: expected ${schema.type}`];
+    if (!types.some((type) => typeMatches(value, type))) {
+      return [`${pointer || '/'}: expected ${types.join(' or ')}`];
     }
   }
 
@@ -67,6 +68,18 @@ async function validateNode(value, schema, context, pointer = '') {
 
   if (typeof value === 'string' && schema.pattern && !(new RegExp(schema.pattern)).test(value)) {
     errors.push(`${pointer || '/'}: value does not match the required format`);
+  }
+  if (typeof value === 'string' && Number.isInteger(schema.maxLength) && value.length > schema.maxLength) {
+    errors.push(`${pointer || '/'}: string exceeds maximum length`);
+  }
+  if (typeof value === 'string' && schema.format === 'date') {
+    const parsed = new Date(`${value}T00:00:00.000Z`);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(value) || Number.isNaN(parsed.valueOf()) || parsed.toISOString().slice(0, 10) !== value) {
+      errors.push(`${pointer || '/'}: value is not a valid date`);
+    }
+  }
+  if (typeof value === 'number' && Number.isFinite(schema.minimum) && value < schema.minimum) {
+    errors.push(`${pointer || '/'}: value is below minimum`);
   }
 
   if (Array.isArray(value) && schema.items) {
@@ -118,4 +131,3 @@ export async function validateValueAgainstSchema(root, schemaRelative, value) {
   const errors = await validateNode(value, schema.value, { root, schemaPath: schema.filePath });
   return { ok: errors.length === 0, errors };
 }
-

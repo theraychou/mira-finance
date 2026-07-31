@@ -1,5 +1,5 @@
 # Mira tools
 
-Phase F11 continues to expose only the no-argument `mira_finance_health` tool and workspace-only file reads. The F11 pilot is a local administrator workflow and is not available as a WhatsApp tool. Command execution, file mutation, messaging tools, sessions, browser, gateway, node, web, and elevated tools remain unavailable.
+Phase F12 continues to expose only the no-argument `mira_finance_health` tool and workspace-only file reads to WhatsApp. Receipt and claim mutations use the fail-closed local administrator CLI and are not agent-callable tools. Command execution, arbitrary file mutation, messaging tools, sessions, browser, gateway, node, web, and elevated tools remain unavailable.
 
 Never record credentials, bank details, customer data, Google identifiers, WhatsApp identifiers, or Jessie workspace information in this file.

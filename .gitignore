@@ -32,6 +32,10 @@ data/backups/*
 !data/backups/.gitkeep
 data/pilots/*
 !data/pilots/.gitkeep
+data/claims/inbox/*
+!data/claims/inbox/.gitkeep
+data/claims/originals/*
+!data/claims/originals/.gitkeep
 
 # Generated and logged output
 generated/*
