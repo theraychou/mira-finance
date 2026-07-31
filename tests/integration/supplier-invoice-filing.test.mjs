@@ -147,6 +147,17 @@ test('exact documents are blocked and probable duplicates require resolution', a
       databasePath: value.databasePath, supplierInvoiceId: probable.id, requestingUser: operator,
       authorisedUser: operator, sourceChannel: 'test', sourceChat: 'test', now: later
     }), /PROBABLE_DUPLICATE/);
+    const reviewed = await reviseSupplierInvoiceDraft({
+      databasePath: value.databasePath, supplierInvoiceId: probable.id,
+      fields: { probableDuplicateReviewed: true }, actor: operator, root: value.root,
+      now: '2026-07-31T04:02:00.000Z'
+    });
+    assert.equal(reviewed.snapshot.fields.probableDuplicateReviewed, true);
+    assert.doesNotThrow(() => requestSupplierInvoiceApproval({
+      databasePath: value.databasePath, supplierInvoiceId: probable.id, requestingUser: operator,
+      authorisedUser: operator, sourceChannel: 'test', sourceChat: 'test',
+      now: '2026-07-31T04:02:00.000Z'
+    }));
   } finally { await rm(value.root, { recursive: true, force: true }); }
 });
 

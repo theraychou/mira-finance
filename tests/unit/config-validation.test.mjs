@@ -78,7 +78,8 @@ test('supplier invoice schema accepts integer minor units and rejects floating t
     tax_minor: 0,
     total_minor: 1000,
     description: 'TEST / NOT VALID',
-    purchase_order_reference: null
+    purchase_order_reference: null,
+    probable_duplicate_reviewed: false
   };
   assert.equal((await validateValueAgainstSchema(repositoryRoot, 'schemas/supplier-invoice-draft.schema.json', valid)).ok, true);
   assert.equal((await validateValueAgainstSchema(repositoryRoot, 'schemas/supplier-invoice-draft.schema.json', { ...valid, total_minor: 10.5 })).ok, false);

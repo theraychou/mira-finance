@@ -76,12 +76,16 @@ function normalizeFields(fields, categoryIds) {
   if (expenseCategory && !categoryIds.has(expenseCategory)) throw new TypeError('Unknown expense category.');
   const issueDate = calendarDate(fields.issueDate, 'issue_date');
   const dueDate = calendarDate(fields.dueDate, 'due_date');
+  if (fields.probableDuplicateReviewed != null && typeof fields.probableDuplicateReviewed !== 'boolean') {
+    throw new TypeError('probable_duplicate_reviewed must be boolean.');
+  }
   if (issueDate && dueDate && dueDate < issueDate) throw new RangeError('due_date cannot be before issue_date.');
   return {
     classification, supplierId, supplierInvoiceNumber: optional(fields.supplierInvoiceNumber),
     issueDate, dueDate, expenseCategory, projectAllocation: optional(fields.projectAllocation),
     currency, subtotalMinor, taxMinor, totalMinor, description: optional(fields.description),
-    purchaseOrderReference: optional(fields.purchaseOrderReference)
+    purchaseOrderReference: optional(fields.purchaseOrderReference),
+    probableDuplicateReviewed: fields.probableDuplicateReviewed === true
   };
 }
 function validationIssues(fields) {
@@ -249,7 +253,9 @@ export function requestSupplierInvoiceApproval({
     return withImmediateTransaction(database, () => {
       const draft = currentDraft(database, supplierInvoiceId);
       if (draft.snapshot.validationIssues.length) throw new Error(`SUPPLIER_INVOICE_INCOMPLETE:${draft.snapshot.validationIssues.join(',')}`);
-      if (draft.snapshot.probableDuplicate) throw new Error('SUPPLIER_INVOICE_PROBABLE_DUPLICATE_REQUIRES_RESOLUTION');
+      if (draft.snapshot.probableDuplicate && !draft.snapshot.fields.probableDuplicateReviewed) {
+        throw new Error('SUPPLIER_INVOICE_PROBABLE_DUPLICATE_REQUIRES_REVIEW');
+      }
       database.prepare("UPDATE supplier_invoice_approvals SET status='INVALIDATED' WHERE supplier_invoice_id=? AND status='PENDING'").run(supplierInvoiceId);
       const token = secureToken();
       const expiresAt = new Date(current.valueOf() + ttlMinutes * 60_000).toISOString();

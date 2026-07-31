@@ -18,6 +18,7 @@
     "tax_minor": {"type": "integer", "minimum": 0},
     "total_minor": {"type": ["integer", "null"], "minimum": 0},
     "description": {"type": ["string", "null"], "maxLength": 500},
-    "purchase_order_reference": {"type": ["string", "null"], "maxLength": 120}
+    "purchase_order_reference": {"type": ["string", "null"], "maxLength": 120},
+    "probable_duplicate_reviewed": {"type": "boolean"}
   }
 }
