@@ -13,7 +13,7 @@ async function exists(relative) {
   }
 }
 
-test('Phase F13 preserves approved integrations and enables only supplier invoices', async () => {
+test('Phase F14 preserves approved integrations and enables reporting', async () => {
   const foundation = JSON.parse(await readFile(path.join(repositoryRoot, 'config/foundation.json'), 'utf8'));
   assert.deepEqual(foundation.features, {
     database: true,
@@ -21,11 +21,12 @@ test('Phase F13 preserves approved integrations and enables only supplier invoic
     googleDrive: true,
     whatsApp: true,
     claims: true,
-    supplierInvoices: true
+    supplierInvoices: true,
+    reports: true
   });
 });
 
-test('F13 retains all six templates and all eight reversible database migrations', async () => {
+test('F14 retains all six templates and all nine reversible database migrations', async () => {
   assert.equal(await exists('data/migrations/001_initial.up.sql'), true);
   assert.equal(await exists('data/migrations/001_initial.down.sql'), true);
   assert.equal(await exists('data/migrations/002_registries.up.sql'), true);
@@ -42,11 +43,14 @@ test('F13 retains all six templates and all eight reversible database migrations
   assert.equal(await exists('data/migrations/007_claim_receipts.down.sql'), true);
   assert.equal(await exists('data/migrations/008_supplier_invoices.up.sql'), true);
   assert.equal(await exists('data/migrations/008_supplier_invoices.down.sql'), true);
+  assert.equal(await exists('data/migrations/009_reports_exports.up.sql'), true);
+  assert.equal(await exists('data/migrations/009_reports_exports.down.sql'), true);
   assert.equal(await exists('schemas/quotation-draft.schema.json'), true);
   assert.equal(await exists('schemas/invoice-draft.schema.json'), true);
   assert.equal(await exists('schemas/drive-folders.schema.json'), true);
   assert.equal(await exists('schemas/claim-draft.schema.json'), true);
   assert.equal(await exists('schemas/supplier-invoice-draft.schema.json'), true);
+  assert.equal(await exists('docs/phase-f14-boundary.md'), true);
   const currencies = ['myr', 'sgd', 'usd'];
   for (const currency of currencies) {
     const sourceFiles = await readdir(path.join(repositoryRoot, 'templates', 'source', currency));

@@ -191,6 +191,71 @@ export function createInvoiceDraftFromQuotation({ databasePath, quotationId, iss
   }});
 }
 
+export function addClaimRechargeLinesInTransaction(database, {
+  invoiceId, recharges, actor, now = new Date().toISOString()
+}) {
+  text(actor, 'actor'); instant(now, 'now');
+  if (!Array.isArray(recharges) || recharges.length < 1) throw new TypeError('At least one approved claim recharge is required.');
+  const before = result(database, invoiceId);
+  if (!['DRAFT', 'PENDING_CONFIRMATION'].includes(before.status)) throw new Error('RECHARGE_TARGET_INVOICE_NOT_EDITABLE');
+  const linkedClaimCount = database.prepare(
+    'SELECT COUNT(*) AS count FROM claim_invoice_links WHERE invoice_id=?'
+  ).get(invoiceId).count;
+  if (linkedClaimCount) throw new Error('RECHARGE_TARGET_ALREADY_HAS_LINKED_CLAIMS');
+  if (before.snapshot.lineItems.length + recharges.length > 7) throw new Error('RECHARGE_LINE_ITEM_LIMIT_EXCEEDED');
+  const seen = new Set();
+  for (const recharge of recharges) {
+    if (!Number.isSafeInteger(recharge.id) || recharge.id < 1 || seen.has(recharge.id)) throw new TypeError('Recharge IDs must be unique positive integers.');
+    if (!Number.isSafeInteger(recharge.amountMinor) || recharge.amountMinor < 1) throw new TypeError('Recharge amount must be positive integer minor units.');
+    seen.add(recharge.id);
+  }
+  const discount = before.snapshot.discount.type === 'FIXED'
+    ? { type: 'FIXED', amount_minor: before.snapshot.discount.value }
+    : before.snapshot.discount.type === 'PERCENTAGE'
+      ? { type: 'PERCENTAGE', basis_points: before.snapshot.discount.value }
+      : { type: 'NONE' };
+  const resolved = resolve(database, {
+    quotation_id: before.snapshot.quotationId,
+    customer_id: before.snapshot.customer?.id,
+    business_entity_id: before.snapshot.businessEntity?.id,
+    currency: before.snapshot.currency,
+    issue_date: before.snapshot.issueDate,
+    payment_terms_days: before.snapshot.paymentTermsDays,
+    service_date: before.snapshot.serviceDate,
+    purchase_order_number: before.snapshot.purchaseOrderNumber,
+    payment_terms: before.snapshot.paymentTerms,
+    notes: before.snapshot.notes,
+    source_channel: before.snapshot.sourceChannel,
+    source_message_reference: before.snapshot.sourceMessageReference,
+    line_items: [
+      ...before.snapshot.lineItems.map((line) => ({
+        description: line.description, quantity: line.quantity, unit: line.unit, unit_price_minor: line.unitPriceMinor
+      })),
+      ...recharges.map((recharge) => ({
+        description: recharge.description, quantity: '1', unit: 'claim recharge', unit_price_minor: recharge.amountMinor
+      }))
+    ],
+    discount,
+    tax: { mode: 'NONE' }
+  });
+  database.prepare('DELETE FROM invoice_line_items WHERE invoice_id=?').run(invoiceId);
+  lines(database, invoiceId, resolved.snapshot);
+  database.prepare(`UPDATE invoices SET status='DRAFT',subtotal_minor=?,discount_minor=?,tax_minor=0,total_minor=?,
+    balance_due_minor=? WHERE id=?`).run(
+    resolved.calculations.subtotalMinor, resolved.calculations.discountMinor, resolved.calculations.totalMinor,
+    resolved.calculations.totalMinor, invoiceId
+  );
+  database.prepare("UPDATE pending_confirmations SET status='INVALIDATED' WHERE draft_type='invoice' AND draft_id=? AND status='PENDING'").run(invoiceId);
+  const saved = persist(database, invoiceId, before.version + 1, resolved, actor, now);
+  audit(database, now, actor, 'invoice.claim_recharges_added', invoiceId, saved.snapshot, before.draftHash, saved.draftHash);
+  const firstSequence = before.snapshot.lineItems.length + 1;
+  const lineRows = database.prepare(`SELECT id,sequence FROM invoice_line_items WHERE invoice_id=? AND sequence>=? ORDER BY sequence`).all(invoiceId, firstSequence);
+  return {
+    invoice: result(database, invoiceId),
+    links: recharges.map((recharge, index) => ({ rechargeId: recharge.id, invoiceLineItemId: lineRows[index].id }))
+  };
+}
+
 export function getInvoiceDraft({ databasePath, invoiceId }) {
   const database = openDatabase(databasePath, { readOnly: true });
   try { return result(database, invoiceId); } finally { database.close(); }

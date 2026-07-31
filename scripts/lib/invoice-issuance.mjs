@@ -80,6 +80,17 @@ function succeed(databasePath, reservation, files, now) {
     database.prepare(`UPDATE invoice_issuances SET status='ISSUED',docx_relative_path=?,pdf_relative_path=?,docx_sha256=?,pdf_sha256=?,issued_by=?,issued_at=?,updated_at=? WHERE invoice_id=?`)
       .run(files.docxRelativePath,files.pdfRelativePath,files.docxSha256,files.pdfSha256,reservation.actor,now,now,reservation.invoiceId);
     database.prepare("UPDATE invoices SET status='ISSUED',issued_at=?,document_hash=? WHERE id=?").run(now,files.pdfSha256,reservation.invoiceId);
+    const linkedRecharges = database.prepare(`SELECT r.id FROM claim_recharges r
+      JOIN claim_invoice_links l ON l.claim_recharge_id=r.id
+      WHERE l.invoice_id=? AND r.status='APPROVED' ORDER BY r.id`).all(reservation.invoiceId);
+    for (const recharge of linkedRecharges) {
+      database.prepare("UPDATE claim_recharges SET status='INVOICED' WHERE id=?").run(recharge.id);
+      database.prepare(`INSERT INTO claim_recharge_events
+        (claim_recharge_id,from_status,to_status,actor,details_json,occurred_at)
+        VALUES (?,'APPROVED','INVOICED',?,?,?)`).run(
+        recharge.id, reservation.actor, canonicalJson({ invoiceId: reservation.invoiceId, documentNumber: reservation.documentNumber }), now
+      );
+    }
     database.prepare(`INSERT INTO invoice_issuance_attempts (invoice_id,attempt_number,result,docx_sha256,pdf_sha256,actor,occurred_at) VALUES (?,1,'SUCCEEDED',?,?,?,?)`)
       .run(reservation.invoiceId,files.docxSha256,files.pdfSha256,reservation.actor,now);
     audit(database,now,reservation.actor,'invoice.issued',reservation.invoiceId,'PASS',{documentNumber:reservation.documentNumber,docxSha256:files.docxSha256,pdfSha256:files.pdfSha256,attemptNumber:1},files.pdfSha256);

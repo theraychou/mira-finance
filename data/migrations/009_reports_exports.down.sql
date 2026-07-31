@@ -1,0 +1,17 @@
+DROP INDEX report_exports_type_period_idx;
+DROP TRIGGER report_exports_no_delete;
+DROP TRIGGER report_exports_no_update;
+DROP TABLE report_exports;
+DROP TRIGGER claim_submission_pack_items_no_delete;
+DROP TRIGGER claim_submission_pack_items_no_update;
+DROP TABLE claim_submission_pack_items;
+DROP TABLE claim_submission_packs;
+DROP TRIGGER claim_invoice_links_no_delete;
+DROP TRIGGER claim_invoice_links_no_update;
+DROP TABLE claim_invoice_links;
+DROP TABLE claim_recharge_confirmations;
+DROP TRIGGER claim_recharge_events_no_delete;
+DROP TRIGGER claim_recharge_events_no_update;
+DROP TABLE claim_recharge_events;
+DROP INDEX claim_recharges_customer_status_idx;
+DROP TABLE claim_recharges;

@@ -4,7 +4,7 @@
   "project": {
     "agentId": "mira-finance",
     "displayName": "Mira",
-    "phase": "F13"
+    "phase": "F14"
   },
   "workspace": {
     "path": "/root/.workspaces/mira-finance",
@@ -16,7 +16,8 @@
     "googleDrive": true,
     "whatsApp": true,
     "claims": true,
-    "supplierInvoices": true
+    "supplierInvoices": true,
+    "reports": true
   },
   "logging": {
     "directory": "logs",

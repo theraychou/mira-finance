@@ -4,7 +4,7 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { repositoryRoot } from '../../scripts/validate-config.mjs';
 
-test('F13 policy isolates Mira and keeps finance mutations outside WhatsApp tools', async () => {
+test('F14 policy isolates Mira and keeps finance mutations outside WhatsApp tools', async () => {
   const policy = JSON.parse(await readFile(path.join(repositoryRoot, 'config/openclaw-agent-policy.json'), 'utf8'));
   assert.equal(policy.agentId, 'mira-finance');
   assert.equal(policy.displayName, 'Mira');
@@ -55,5 +55,14 @@ test('supplier invoice administrator CLI is fail-closed and not declared as an O
   assert.match(executable, /data.*supplier-invoices.*inbox/);
   assert.match(executable, /data.*pending/);
   assert.doesNotMatch(executable, /\/root\/clawd|client_secret|refresh_token|private_key/i);
+  assert.deepEqual(manifest.contracts.tools, ['mira_finance_health']);
+});
+
+test('report and claim-recharge CLI is fail-closed and not declared as an OpenClaw tool', async () => {
+  const executable = await readFile(path.join(repositoryRoot, 'scripts/finance-reports.mjs'), 'utf8');
+  const manifest = JSON.parse(await readFile(path.join(repositoryRoot, 'extensions/mira-finance-health/openclaw.plugin.json'), 'utf8'));
+  assert.match(executable, /--admin/);
+  assert.match(executable, /data.*pending/);
+  assert.doesNotMatch(executable, /google.*sheets|spreadsheets|sendMessage|\/root\/clawd|client_secret|refresh_token|private_key/i);
   assert.deepEqual(manifest.contracts.tools, ['mira_finance_health']);
 });

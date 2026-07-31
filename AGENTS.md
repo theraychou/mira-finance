@@ -32,6 +32,6 @@ This is the isolated repository and future workspace for OpenClaw Finance Agent 
 
 Before each phase: read the build specification and prior completion report, inspect relevant files, rerun the previous acceptance checks, inspect Git state, and back up anything that will change. Then implement only the current phase, run focused and regression tests, and provide the standard completion report.
 
-## Phase F13 status
+## Phase F14 status
 
-Mira remains isolated and only the dedicated `RC Finance` WhatsApp group routes to her. F13 adds a separate supplier registry and incoming supplier-invoice workflow with private original preservation, advisory extraction, explicit classification, due dates, category/project allocation, duplicate controls, Ray approval, Drive filing, and a supplier register. Incoming supplier invoices never use outgoing invoice numbering or payment functionality. Image OCR is optional and never authoritative. Finance mutations remain fail-closed administrator workflows and are not exposed as automatic WhatsApp tools.
+Mira remains isolated and only the dedicated `RC Finance` WhatsApp group routes to her. F14 adds deterministic reports and immutable CSV/XLSX exports with strict currency separation. Filed claims can be assigned for recharge to an active company/project, but Ray must separately approve the assignment and explicitly confirm inclusion in an outgoing invoice; the resulting claim-to-line link is immutable. Monthly company claim packs include summaries and hash-verified receipt copies but are never sent automatically. Live Google Sheets mirroring remains disabled. Finance mutations remain fail-closed administrator workflows and are not exposed as automatic WhatsApp tools.

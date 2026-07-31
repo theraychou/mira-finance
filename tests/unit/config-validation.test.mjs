@@ -8,14 +8,15 @@ test('foundation configuration passes its schema', async () => {
   assert.equal(result.ok, true, result.errors.join('\n'));
 });
 
-test('foundation schema rejects disabling the approved F13 WhatsApp feature', async () => {
+test('foundation schema rejects disabling the approved F14 WhatsApp feature', async () => {
   const invalid = {
     database: true,
     documentGeneration: true,
     googleDrive: true,
     whatsApp: false,
     claims: true,
-    supplierInvoices: true
+    supplierInvoices: true,
+    reports: true
   };
   const result = await validateValueAgainstSchema(
     repositoryRoot,
@@ -34,6 +35,7 @@ test('foundation schema rejects unrecognised feature flags', async () => {
     whatsApp: true,
     claims: true,
     supplierInvoices: true,
+    reports: true,
     automaticEmailing: false
   };
   const result = await validateValueAgainstSchema(
