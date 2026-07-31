@@ -36,6 +36,10 @@ data/claims/inbox/*
 !data/claims/inbox/.gitkeep
 data/claims/originals/*
 !data/claims/originals/.gitkeep
+data/supplier-invoices/inbox/*
+!data/supplier-invoices/inbox/.gitkeep
+data/supplier-invoices/originals/*
+!data/supplier-invoices/originals/.gitkeep
 
 # Generated and logged output
 generated/*

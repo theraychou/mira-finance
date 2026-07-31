@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "supplier-invoice-draft.schema.json",
+  "title": "Mira incoming supplier invoice draft",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["classification", "supplier_id", "supplier_invoice_number", "issue_date", "due_date", "expense_category", "currency", "subtotal_minor", "tax_minor", "total_minor"],
+  "properties": {
+    "classification": {"const": "SUPPLIER_INVOICE"},
+    "supplier_id": {"type": ["integer", "null"], "minimum": 1},
+    "supplier_invoice_number": {"type": ["string", "null"], "maxLength": 120},
+    "issue_date": {"type": ["string", "null"], "format": "date"},
+    "due_date": {"type": ["string", "null"], "format": "date"},
+    "expense_category": {"type": ["string", "null"], "pattern": "^[a-z][a-z0-9-]{1,63}$"},
+    "project_allocation": {"type": ["string", "null"], "maxLength": 200},
+    "currency": {"type": ["string", "null"], "enum": ["MYR", "SGD", "USD", null]},
+    "subtotal_minor": {"type": ["integer", "null"], "minimum": 0},
+    "tax_minor": {"type": "integer", "minimum": 0},
+    "total_minor": {"type": ["integer", "null"], "minimum": 0},
+    "description": {"type": ["string", "null"], "maxLength": 500},
+    "purchase_order_reference": {"type": ["string", "null"], "maxLength": 120}
+  }
+}
