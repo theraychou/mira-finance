@@ -1,10 +1,10 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "feature-flags.schema.json",
-  "title": "Mira Finance Phase F14 feature flags",
+  "title": "Mira Finance Phase F15 feature flags",
   "type": "object",
   "additionalProperties": false,
-  "required": ["database", "documentGeneration", "googleDrive", "whatsApp", "claims", "supplierInvoices", "reports"],
+  "required": ["database", "documentGeneration", "googleDrive", "whatsApp", "claims", "supplierInvoices", "reports", "corrections"],
   "properties": {
     "database": {"type": "boolean", "const": true},
     "documentGeneration": {"type": "boolean", "const": true},
@@ -12,6 +12,7 @@
     "whatsApp": {"type": "boolean", "const": true},
     "claims": {"type": "boolean", "const": true},
     "supplierInvoices": {"type": "boolean", "const": true},
-    "reports": {"type": "boolean", "const": true}
+    "reports": {"type": "boolean", "const": true},
+    "corrections": {"type": "boolean", "const": true}
   }
 }

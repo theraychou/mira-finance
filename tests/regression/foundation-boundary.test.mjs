@@ -13,7 +13,7 @@ async function exists(relative) {
   }
 }
 
-test('Phase F14 preserves approved integrations and enables reporting', async () => {
+test('Phase F15 preserves approved integrations and enables controlled corrections', async () => {
   const foundation = JSON.parse(await readFile(path.join(repositoryRoot, 'config/foundation.json'), 'utf8'));
   assert.deepEqual(foundation.features, {
     database: true,
@@ -22,11 +22,12 @@ test('Phase F14 preserves approved integrations and enables reporting', async ()
     whatsApp: true,
     claims: true,
     supplierInvoices: true,
-    reports: true
+    reports: true,
+    corrections: true
   });
 });
 
-test('F14 retains all six templates and all nine reversible database migrations', async () => {
+test('F15 retains all six templates and all ten reversible database migrations', async () => {
   assert.equal(await exists('data/migrations/001_initial.up.sql'), true);
   assert.equal(await exists('data/migrations/001_initial.down.sql'), true);
   assert.equal(await exists('data/migrations/002_registries.up.sql'), true);
@@ -45,12 +46,15 @@ test('F14 retains all six templates and all nine reversible database migrations'
   assert.equal(await exists('data/migrations/008_supplier_invoices.down.sql'), true);
   assert.equal(await exists('data/migrations/009_reports_exports.up.sql'), true);
   assert.equal(await exists('data/migrations/009_reports_exports.down.sql'), true);
+  assert.equal(await exists('data/migrations/010_corrections.up.sql'), true);
+  assert.equal(await exists('data/migrations/010_corrections.down.sql'), true);
   assert.equal(await exists('schemas/quotation-draft.schema.json'), true);
   assert.equal(await exists('schemas/invoice-draft.schema.json'), true);
   assert.equal(await exists('schemas/drive-folders.schema.json'), true);
   assert.equal(await exists('schemas/claim-draft.schema.json'), true);
   assert.equal(await exists('schemas/supplier-invoice-draft.schema.json'), true);
   assert.equal(await exists('docs/phase-f14-boundary.md'), true);
+  assert.equal(await exists('docs/phase-f15-boundary.md'), true);
   const currencies = ['myr', 'sgd', 'usd'];
   for (const currency of currencies) {
     const sourceFiles = await readdir(path.join(repositoryRoot, 'templates', 'source', currency));

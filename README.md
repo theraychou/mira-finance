@@ -4,9 +4,9 @@ This repository contains the isolated workspace for Mira, the future OpenClaw Fi
 
 ## Current phase
 
-Phase F14 - Reporting and Export.
+Phase F15 - Credit Notes, Cancellations, and Replacements.
 
-Mira is registered as an isolated OpenClaw agent and the dedicated RC Finance group routes only to her. All earlier quotation, invoice, Drive, pilot, receipt, claim, and supplier-invoice workflows remain intact. F14 adds deterministic finance reports, CSV/XLSX exports, approved claim-to-client recharge assignments, explicit confirmation before a recharge becomes an invoice line, immutable invoice links, and monthly company claim-submission packs. Live Google Sheets mirroring, automatic delivery, payment actions, reconciliation, and F15 credit-note or cancellation work remain unavailable.
+Mira is registered as an isolated OpenClaw agent and the dedicated RC Finance group routes only to her. All earlier quotation, invoice, Drive, pilot, receipt, claim, supplier-invoice, and reporting workflows remain intact. F15 adds explicitly confirmed credit notes and cancellation controls, immutable correction history, visibly linked replacement drafts, credit-aware reports, and private Drive filing for corrective artifacts. Originals and number allocations are never deleted, overwritten, or reused.
 
 ## Workspace
 
@@ -42,12 +42,15 @@ npm run reports -- --admin --action report --input data/pending/report-input.jso
 npm run reports -- --admin --action export --actor operator --input data/pending/report-input.json
 npm run reports -- --admin --action recharge-register
 npm run reports -- --admin --action claim-pack-register
+npm run corrections -- --admin --action credit-draft --actor operator --input data/pending/correction-input.json
+npm run corrections -- --admin --action cancel-request --actor operator --input data/pending/correction-input.json
+npm run corrections -- --admin --action drive-file --actor operator --input data/pending/correction-input.json
 npm run registry -- currencies list
 npm run health
 npm test
 ```
 
-The foundation health check exits successfully when the F14 configuration is healthy. The separate Drive health check validates live access to the approved folder without printing its identity or folder ID. WhatsApp routing remains configured only for RC Finance, while Mira's chat tool surface remains read-only health access.
+The foundation health check exits successfully when the F15 configuration is healthy. The separate Drive health check validates live access to the approved folder without printing its identity or folder ID. WhatsApp routing remains configured only for RC Finance, while Mira's chat tool surface remains read-only health access.
 
 The private runtime ledger is `data/finance.sqlite3`. It is excluded from Git. The F11 pilot uses the separate ignored ledger `data/pilots/f11-pilot.sqlite3`. Document numbers are allocated transactionally in the approved `YYMMDD1001-{CLIENT_INITIALS}` format using one collision-free daily sequence across document types.
 
@@ -66,6 +69,10 @@ F13 applies the same untrusted-attachment controls to `data/supplier-invoices/in
 F14 reports include monthly and annual summaries, quotation and invoice registers, outstanding and overdue balances, claim registers, and expenses by category. All filters use explicit half-open date boundaries and keep MYR, SGD, and USD totals separate. CSV and XLSX exports are immutable ledger events; test exports are marked `TEST / NOT VALID`. The optional Google Sheets mirror remains disabled and no additional Google authorisation is requested.
 
 A filed claim may be assigned to a specific active company and optional project, then approved by Ray. Adding it to an outgoing invoice requires a separate, context-bound confirmation and creates an immutable claim-to-invoice-line link. Monthly company claim packs contain a deterministic summary and hash-verified copies of supporting receipts. Generation marks a pack `READY`; only a separate manual acknowledgement records it as `SUBMITTED`. F14 does not send it.
+
+F15 credit notes can reduce only the remaining unpaid balance of an issued invoice. They use integer minor units, the correct currency template mapping, a separate immutable number allocation, and Ray-only confirmation. Credit-note output visibly identifies the original invoice and removes payment-request instructions.
+
+Issued unpaid invoices and issued quotations can be cancelled only through a separate confirmation. Original files remain unchanged, their numbers become permanently retired, and replacements are new drafts with visible original-document references. Paid or partially paid invoices require a later refund/reversal workflow and cannot be cancelled in F15.
 
 ## Security
 

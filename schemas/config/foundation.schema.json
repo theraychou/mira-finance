@@ -28,7 +28,7 @@
       "properties": {
         "agentId": {"type": "string", "const": "mira-finance"},
         "displayName": {"type": "string", "const": "Mira"},
-        "phase": {"type": "string", "const": "F14"}
+        "phase": {"type": "string", "const": "F15"}
       }
     },
     "workspace": {

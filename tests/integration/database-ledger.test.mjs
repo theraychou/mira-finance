@@ -33,14 +33,14 @@ function allocateInWorker(workerData) {
   });
 }
 
-test('database migrations are reversible and create the complete F14 ledger', async () => {
+test('database migrations are reversible and create the complete F15 ledger', async () => {
   const { directory, databasePath } = await temporaryLedger();
   try {
     assert.deepEqual(checkDatabase(databasePath), {
       ok: true,
       integrity: ['ok'],
       foreignKeyViolations: 0,
-      schemaVersion: 9
+      schemaVersion: 10
     });
     const database = openDatabase(databasePath, { readOnly: true });
     const tables = database.prepare("SELECT name FROM sqlite_master WHERE type = 'table'").all().map((row) => row.name);
@@ -59,8 +59,14 @@ test('database migrations are reversible and create the complete F14 ledger', as
       'supplier_invoice_filings', 'supplier_invoice_filing_attempts', 'claim_recharges',
       'claim_recharge_events', 'claim_recharge_confirmations', 'claim_invoice_links',
       'claim_submission_packs', 'claim_submission_pack_items', 'report_exports'
+      , 'credit_notes', 'credit_note_line_items', 'credit_note_draft_state',
+      'credit_note_draft_versions', 'correction_confirmations', 'credit_note_issuances',
+      'credit_note_issuance_attempts', 'document_cancellations', 'replacement_document_links',
+      'document_status_history', 'correction_drive_filings'
     ]) assert.ok(tables.includes(table), `missing table ${table}`);
 
+    const correctionsDown = await migrateDown({ databasePath });
+    assert.equal(correctionsDown.version, 9);
     const reportsDown = await migrateDown({ databasePath });
     assert.equal(reportsDown.version, 8);
     const supplierInvoicesDown = await migrateDown({ databasePath });
@@ -206,7 +212,7 @@ test('audit events are append-only and SQLite-safe backups restore cleanly', asy
     const restored = openDatabase(backupPath, { readOnly: true });
     assert.equal(restored.prepare('SELECT COUNT(*) AS count FROM audit_events').get().count, 1);
     restored.close();
-    assert.equal(verifyLedgerEquivalence(databasePath, backupPath).tableCount, 49);
+    assert.equal(verifyLedgerEquivalence(databasePath, backupPath).tableCount, 60);
   } finally {
     await rm(directory, { recursive: true, force: true });
   }
@@ -218,14 +224,14 @@ test('number formatting rejects ambiguous or invalid inputs', () => {
   assert.throws(() => formatDocumentNumber({ sequenceDate: '2026-07-29', sequenceValue: 1001, clientInitials: '../RC' }), /uppercase letters or digits/);
 });
 
-test('F14 schema upgrades preserve every pre-existing ledger table', async () => {
+test('F15 schema upgrades preserve every pre-existing ledger table', async () => {
   const { directory, databasePath } = await temporaryLedger();
   try {
     await migrateDown({ databasePath });
-    const beforePath = path.join(directory, 'before-f14.sqlite3');
+    const beforePath = path.join(directory, 'before-f15.sqlite3');
     await backupDatabase({ sourcePath: databasePath, destinationPath: beforePath });
     await migrateUp({ databasePath, now: () => '2026-07-31T00:00:00.000Z' });
-    assert.equal(verifyCommonLedgerEquivalence(databasePath, beforePath).tableCount, 41);
+    assert.equal(verifyCommonLedgerEquivalence(databasePath, beforePath).tableCount, 48);
   } finally {
     await rm(directory, { recursive: true, force: true });
   }

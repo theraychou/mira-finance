@@ -86,15 +86,20 @@ function summaryRows(database, range, currencyValue) {
     FROM claims WHERE transaction_date>=? AND transaction_date<? AND status='FILED'${currencyClause} GROUP BY currency`).all(...params);
   const supplierInvoices = database.prepare(`SELECT currency,COUNT(*) AS count,COALESCE(SUM(total_minor),0) AS total_minor
     FROM supplier_invoices WHERE issue_date>=? AND issue_date<? AND status='FILED'${currencyClause} GROUP BY currency`).all(...params);
+  const creditNotes = database.prepare(`SELECT currency,COUNT(*) AS count,COALESCE(SUM(total_minor),0) AS total_minor
+    FROM credit_notes WHERE issue_date>=? AND issue_date<? AND status='ISSUED'${currencyClause} GROUP BY currency`).all(...params);
   return CURRENCIES.filter((code) => !currencyValue || code === currencyValue).map((code) => {
     const q = quotations.find((row) => row.currency === code) ?? {};
     const i = invoices.find((row) => row.currency === code) ?? {};
     const c = claims.find((row) => row.currency === code) ?? {};
     const s = supplierInvoices.find((row) => row.currency === code) ?? {};
+    const n = creditNotes.find((row) => row.currency === code) ?? {};
     return {
       currency: code,
       quotation_count: Number(q.count ?? 0), quotation_total_minor: Number(q.total_minor ?? 0),
       invoice_count: Number(i.count ?? 0), invoice_total_minor: Number(i.total_minor ?? 0),
+      credit_note_count: Number(n.count ?? 0), credit_note_total_minor: Number(n.total_minor ?? 0),
+      net_invoice_total_minor: Number(i.total_minor ?? 0) - Number(n.total_minor ?? 0),
       paid_minor: Number(i.paid_minor ?? 0), outstanding_minor: Number(i.outstanding_minor ?? 0),
       claim_count: Number(c.count ?? 0), claim_total_minor: Number(c.total_minor ?? 0),
       supplier_invoice_count: Number(s.count ?? 0), supplier_invoice_total_minor: Number(s.total_minor ?? 0)
@@ -120,7 +125,7 @@ export function buildFinanceReport({
     if (['monthly-summary', 'annual-summary'].includes(reportType)) {
       if (customerId) throw new Error('Customer filtering is not available for aggregate summaries; use a register.');
       rows = summaryRows(database, range, currencyValue);
-      amountField = 'invoice_total_minor';
+      amountField = 'net_invoice_total_minor';
     } else if (reportType === 'quotation-register') {
       const where = conditions({ dateColumn: 'q.issue_date', range, currencyValue, customerId, statusValue, includeCancelled, customerColumn: 'q.customer_id', statusColumn: 'q.status' });
       rows = database.prepare(`SELECT q.id,q.quotation_number,q.status,q.issue_date,q.valid_until,q.customer_id,c.customer_code,c.display_name AS customer_name,
@@ -131,18 +136,22 @@ export function buildFinanceReport({
       const where = conditions({ dateColumn: 'i.issue_date', range, currencyValue, customerId, statusValue, includeCancelled, customerColumn: 'i.customer_id', statusColumn: 'i.status' });
       rows = database.prepare(`SELECT i.id,i.invoice_number,i.status,i.issue_date,i.due_date,i.customer_id,c.customer_code,c.display_name AS customer_name,
         i.currency,i.total_minor,i.amount_paid_minor,i.balance_due_minor,i.payment_status,
-        CASE WHEN i.status='ISSUED' THEN i.total_minor ELSE 0 END AS recognized_minor,
+        COALESCE((SELECT SUM(n.total_minor) FROM credit_notes n WHERE n.original_invoice_id=i.id AND n.status='ISSUED'),0) AS credited_minor,
+        CASE WHEN i.status='ISSUED' THEN MAX(0,i.total_minor-COALESCE((SELECT SUM(n.total_minor) FROM credit_notes n WHERE n.original_invoice_id=i.id AND n.status='ISSUED'),0)) ELSE 0 END AS recognized_minor,
         CASE WHEN i.status='ISSUE_FAILED' THEN 1 ELSE 0 END AS failed_issuance
         FROM invoices i LEFT JOIN customers c ON c.id=i.customer_id ${where.sql} ORDER BY i.issue_date,i.id`).all(...where.params);
     } else if (reportType === 'outstanding' || reportType === 'overdue') {
-      const clauses = ["i.status='ISSUED'", 'i.balance_due_minor>0'];
+      const clauses = ["i.status='ISSUED'",
+        "(i.balance_due_minor-COALESCE((SELECT SUM(n.total_minor) FROM credit_notes n WHERE n.original_invoice_id=i.id AND n.status='ISSUED'),0))>0"];
       const params = [];
       if (range.start) { clauses.push('i.issue_date>=?', 'i.issue_date<?'); params.push(range.start, range.endExclusive); }
       if (currencyValue) { clauses.push('i.currency=?'); params.push(currencyValue); }
       if (customerId) { clauses.push('i.customer_id=?'); params.push(customerId); }
       if (reportType === 'overdue') { clauses.push('i.due_date<?'); params.push(asOfDate); }
       rows = database.prepare(`SELECT i.id,i.invoice_number,i.issue_date,i.due_date,i.customer_id,c.customer_code,c.display_name AS customer_name,
-        i.currency,i.total_minor,i.amount_paid_minor,i.balance_due_minor AS recognized_minor,i.payment_status,
+        i.currency,i.total_minor,i.amount_paid_minor,i.balance_due_minor,
+        COALESCE((SELECT SUM(n.total_minor) FROM credit_notes n WHERE n.original_invoice_id=i.id AND n.status='ISSUED'),0) AS credited_minor,
+        (i.balance_due_minor-COALESCE((SELECT SUM(n.total_minor) FROM credit_notes n WHERE n.original_invoice_id=i.id AND n.status='ISSUED'),0)) AS recognized_minor,i.payment_status,
         CAST(julianday(?) - julianday(i.due_date) AS INTEGER) AS days_overdue
         FROM invoices i LEFT JOIN customers c ON c.id=i.customer_id WHERE ${clauses.join(' AND ')}
         ORDER BY i.due_date,i.id`).all(asOfDate, ...params);

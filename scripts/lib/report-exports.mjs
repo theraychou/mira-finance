@@ -88,7 +88,9 @@ function xlsxBuffer(report, classification) {
   const data = exportRows(report, classification);
   const headers = columns(data);
   const currencyColumn = headers.indexOf('currency');
-  const amountKey = headers.includes('recognized_minor') ? 'recognized_minor' : headers.includes('invoice_total_minor') ? 'invoice_total_minor' : null;
+  const amountKey = headers.includes('recognized_minor') ? 'recognized_minor'
+    : headers.includes('net_invoice_total_minor') ? 'net_invoice_total_minor'
+      : headers.includes('invoice_total_minor') ? 'invoice_total_minor' : null;
   const amountColumn = amountKey ? headers.indexOf(amountKey) : -1;
   const dataRows = [
     headers.map((value) => ({ value, style: 2 })),
