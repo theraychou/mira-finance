@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { migrateUp } from '../../scripts/lib/migrations.mjs';
@@ -142,6 +142,12 @@ test('credit note requires confirmation, references its invoice, issues immutabl
       lines: [{ description: 'TEST PARTIAL CREDIT / NOT VALID', amount_minor: 4000 }],
       actor: 'test-ray', now: '2026-07-30T00:01:00.000Z'
     });
+    const visual = await renderCreditNoteDocx({
+      root: path.resolve('.'), snapshot: draft.snapshot, documentNumber: '2607301001-SC', testMode: true
+    });
+    const visualDirectory = path.resolve('tests', 'generated-output', 'f15-credit-note');
+    await mkdir(visualDirectory, { recursive: true, mode: 0o700 });
+    await writeFile(path.join(visualDirectory, 'MYR-credit-note-TEST-NOT-VALID.docx'), visual.buffer, { mode: 0o600 });
     assert.equal(draft.snapshot.originalInvoiceNumber, '2607291001-SC');
     const rendered = await renderCreditNoteDocx({
       root: path.resolve('.'), snapshot: draft.snapshot, documentNumber: '2607301001-SC', testMode: true

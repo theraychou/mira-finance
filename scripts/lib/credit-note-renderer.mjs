@@ -1,4 +1,5 @@
 import { readFile } from 'node:fs/promises';
+import { DOMParser, XMLSerializer } from '@xmldom/xmldom';
 import Docxtemplater from 'docxtemplater';
 import PizZip from 'pizzip';
 import { compactLineItemRows } from '../render-template-fixtures.mjs';
@@ -14,9 +15,12 @@ function contact(customer) {
 }
 
 function removePaymentTable(xml) {
-  return xml.replace(/<w:tbl\b[\s\S]*?<\/w:tbl>/g, (table) =>
-    table.includes('PREFERRED PAYMENT METHOD') ? '' : table
-  );
+  const document = new DOMParser().parseFromString(xml, 'application/xml');
+  const tables = [...document.getElementsByTagName('w:tbl')];
+  for (const table of tables) {
+    if (table.textContent.includes('PREFERRED PAYMENT METHOD')) table.parentNode.removeChild(table);
+  }
+  return new XMLSerializer().serializeToString(document);
 }
 
 export async function renderCreditNoteDocx({
