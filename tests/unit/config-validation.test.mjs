@@ -1,14 +1,25 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import path from 'node:path';
 import { repositoryRoot, runValidation } from '../../scripts/validate-config.mjs';
 import { validateValueAgainstSchema } from '../../scripts/lib/config-validation.mjs';
+import { loadCustomerDeliveryConfig } from '../../scripts/lib/customer-delivery-config.mjs';
 
 test('foundation configuration passes its schema', async () => {
   const result = await runValidation();
   assert.equal(result.ok, true, result.errors.join('\n'));
 });
 
-test('foundation schema rejects disabling the approved F16 WhatsApp feature', async () => {
+test('private F17A delivery configuration validates while remaining disabled before OAuth', async () => {
+  const configuration = await loadCustomerDeliveryConfig({
+    configPath: path.join(repositoryRoot, 'config', 'customer-delivery.example.json')
+  });
+  assert.equal(configuration.enabled, false);
+  assert.equal(configuration.defaultChannel, 'EMAIL');
+  assert.equal(configuration.confirmationTtlMinutes, 15);
+});
+
+test('foundation schema rejects disabling the approved F17A WhatsApp feature', async () => {
   const invalid = {
     database: true,
     documentGeneration: true,
@@ -17,7 +28,8 @@ test('foundation schema rejects disabling the approved F16 WhatsApp feature', as
     claims: true,
     supplierInvoices: true,
     reports: true,
-    corrections: true
+    corrections: true,
+    customerDelivery: true
   };
   const result = await validateValueAgainstSchema(
     repositoryRoot,
@@ -38,6 +50,7 @@ test('foundation schema rejects unrecognised feature flags', async () => {
     supplierInvoices: true,
     reports: true,
     corrections: true,
+    customerDelivery: true,
     automaticEmailing: false
   };
   const result = await validateValueAgainstSchema(

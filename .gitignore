@@ -61,6 +61,7 @@ config/business-entities.json
 config/customers.json
 config/drive-folders.json
 config/whatsapp-routing.json
+config/customer-delivery.json
 templates/**/*.docx
 templates/**/*.dotx
 

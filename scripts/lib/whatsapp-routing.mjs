@@ -82,8 +82,8 @@ export function createOpenClawF10Patch({ openClawConfiguration, routingConfigura
           [groupId]: {
             requireMention: false,
             toolsBySender: {
-              '*': { deny: ['read', 'mira_finance_health', 'group:messaging', 'group:sessions'] },
-              [`e164:${sender}`]: { alsoAllow: ['read', 'mira_finance_health'] }
+              '*': { deny: ['read', 'mira_finance_health', 'mira_finance_prepare_delivery', 'mira_finance_confirm_delivery', 'group:messaging', 'group:sessions'] },
+              [`e164:${sender}`]: { alsoAllow: ['read', 'mira_finance_health', 'mira_finance_prepare_delivery', 'mira_finance_confirm_delivery'] }
             },
             systemPrompt: [
               'This is the dedicated RC Finance group for Mira.',
@@ -91,7 +91,9 @@ export function createOpenClawF10Patch({ openClawConfiguration, routingConfigura
               'Only the deterministically authorised sender may create drafts or confirm issuance.',
               'Deny financial state changes for every other sender.',
               'Never reveal raw sender, group, or message identifiers.',
-              'Do not send customer communications or issue an official document during F10.'
+              'Phase F17A customer delivery requires a masked preview and an exact short-lived confirmation token.',
+              'Email is the default. Use WhatsApp only when Ray explicitly requests it.',
+              'Never accept an ad-hoc destination or use the broad messaging tool.'
             ].join(' ')
           }
         }

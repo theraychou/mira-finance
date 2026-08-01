@@ -32,6 +32,6 @@ This is the isolated repository and future workspace for OpenClaw Finance Agent 
 
 Before each phase: read the build specification and prior completion report, inspect relevant files, rerun the previous acceptance checks, inspect Git state, and back up anything that will change. Then implement only the current phase, run focused and regression tests, and provide the standard completion report.
 
-## Phase F16 status
+## Phase F17A status
 
-Mira remains isolated and only the dedicated `RC Finance` WhatsApp group routes to her. F16 adds production safety checks, verified restore drills, bounded operational files, redacted alerts, and recoverable interrupted issuance. Every retry keeps the original confirmed snapshot and allocated number. Finance mutations remain fail-closed administrator workflows and are not exposed as automatic WhatsApp tools.
+Mira remains isolated and only the dedicated `RC Finance` WhatsApp group routes to her. F17A adds confirmation-gated outbound delivery of hash-verified issued PDFs to active verified customer contacts. Email is the default; WhatsApp is explicit and consent-bound. The broad messaging tool remains denied. Contact mutation is administrator-only. Inbound email/WhatsApp reply processing and escalation are deferred to F17B.

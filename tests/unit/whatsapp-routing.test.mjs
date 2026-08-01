@@ -60,7 +60,10 @@ test('F10 patch adds one exact binding without changing existing bindings', () =
   });
   assert.equal(patch.channels.whatsapp.groups[GROUP_ID].requireMention, false);
   assert.deepEqual(patch.channels.whatsapp.groups[GROUP_ID].toolsBySender['*'].deny, [
-    'read', 'mira_finance_health', 'group:messaging', 'group:sessions'
+    'read', 'mira_finance_health', 'mira_finance_prepare_delivery', 'mira_finance_confirm_delivery', 'group:messaging', 'group:sessions'
+  ]);
+  assert.deepEqual(patch.channels.whatsapp.groups[GROUP_ID].toolsBySender[`e164:${RAY}`].alsoAllow, [
+    'read', 'mira_finance_health', 'mira_finance_prepare_delivery', 'mira_finance_confirm_delivery'
   ]);
 });
 

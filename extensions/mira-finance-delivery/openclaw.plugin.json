@@ -1,0 +1,17 @@
+{
+  "id": "mira-finance-delivery",
+  "name": "Mira Finance Customer Delivery",
+  "description": "Prepares and confirms hash-verified customer email or WhatsApp document delivery.",
+  "contracts": {
+    "tools": [
+      "mira_finance_prepare_delivery",
+      "mira_finance_confirm_delivery"
+    ]
+  },
+  "toolMetadata": {
+    "mira_finance_prepare_delivery": {"optional": true},
+    "mira_finance_confirm_delivery": {"optional": true}
+  },
+  "activation": {"onStartup": true},
+  "configSchema": {"type": "object", "additionalProperties": false}
+}

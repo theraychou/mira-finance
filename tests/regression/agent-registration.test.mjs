@@ -4,13 +4,13 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { repositoryRoot } from '../../scripts/validate-config.mjs';
 
-test('F16 policy isolates Mira and keeps finance mutations outside WhatsApp tools', async () => {
+test('F17A policy isolates Mira and exposes only narrow customer-delivery tools', async () => {
   const policy = JSON.parse(await readFile(path.join(repositoryRoot, 'config/openclaw-agent-policy.json'), 'utf8'));
   assert.equal(policy.agentId, 'mira-finance');
   assert.equal(policy.displayName, 'Mira');
   assert.equal(policy.workspace, '/root/.workspaces/mira-finance');
   assert.deepEqual(policy.skills, ['mira-finance']);
-  assert.deepEqual(policy.tools.alsoAllow, ['read', 'mira_finance_health']);
+  assert.deepEqual(policy.tools.alsoAllow, ['read', 'mira_finance_health', 'mira_finance_prepare_delivery', 'mira_finance_confirm_delivery']);
   assert.equal(policy.tools.fs.workspaceOnly, true);
   assert.equal(policy.tools.elevated.enabled, false);
   assert.equal(policy.tools.message.allowCrossContextSend, false);
@@ -20,6 +20,21 @@ test('F16 policy isolates Mira and keeps finance mutations outside WhatsApp tool
   for (const denied of ['message', 'sessions_list', 'sessions_history', 'sessions_send', 'sessions_spawn', 'web_search', 'web_fetch']) {
     assert.ok(policy.tools.deny.includes(denied));
   }
+});
+
+test('customer delivery plugin is confirmation-gated while broad messaging remains denied', async () => {
+  const manifest = JSON.parse(await readFile(path.join(repositoryRoot, 'extensions/mira-finance-delivery/openclaw.plugin.json'), 'utf8'));
+  const source = await readFile(path.join(repositoryRoot, 'extensions/mira-finance-delivery/index.js'), 'utf8');
+  const executable = await readFile(path.join(repositoryRoot, 'scripts/customer-delivery.mjs'), 'utf8');
+  assert.deepEqual(manifest.contracts.tools, ['mira_finance_prepare_delivery', 'mira_finance_confirm_delivery']);
+  assert.equal(manifest.toolMetadata.mira_finance_prepare_delivery.optional, true);
+  assert.equal(manifest.toolMetadata.mira_finance_confirm_delivery.optional, true);
+  assert.match(source, /requesterSenderId/);
+  assert.match(source, /requesterSenderId/);
+  assert.match(source, /routing\.group\.id/);
+  assert.match(source, /defaultChannel/);
+  assert.match(executable, /--admin/);
+  assert.doesNotMatch(`${source}\n${executable}`, /\/root\/clawd|client_secret|refresh_token|private_key/i);
 });
 
 test('production operations CLI is fail-closed and not exposed through WhatsApp', async () => {

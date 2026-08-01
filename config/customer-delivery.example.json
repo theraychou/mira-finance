@@ -1,0 +1,24 @@
+{
+  "$schema": "../schemas/customer-delivery-config.schema.json",
+  "schemaVersion": 1,
+  "enabled": false,
+  "defaultChannel": "EMAIL",
+  "confirmationTtlMinutes": 15,
+  "email": {
+    "enabled": false,
+    "account": "finance@example.test",
+    "client": "mira-gmail-send",
+    "from": "finance@example.test",
+    "replyTo": null
+  },
+  "whatsApp": {
+    "enabled": false,
+    "account": null
+  },
+  "signature": [
+    "Mira — TEST / NOT VALID",
+    "Finance Manager",
+    "Example Test Entity — NOT VALID",
+    "www.example.test"
+  ]
+}

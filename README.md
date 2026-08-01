@@ -4,9 +4,9 @@ This repository contains the isolated workspace for Mira, the future OpenClaw Fi
 
 ## Current phase
 
-Phase F16 - Production Hardening.
+Phase F17A - Controlled Customer Delivery (outbound only).
 
-Mira is registered as an isolated OpenClaw agent and the dedicated RC Finance group routes only to her. F16 hardens the completed finance workflows with verified restore drills, disk and permission protection, bounded logs and temporary files, redacted failure alerts, and recoverable interrupted issuance. Originals and number allocations remain immutable.
+Mira is registered as an isolated OpenClaw agent and the dedicated RC Finance group routes only to her. F17A adds confirmation-gated outbound delivery of immutable issued PDFs to active verified customer contacts. Email is the default; WhatsApp is explicit and requires recorded consent. The broad messaging tool remains denied, and inbound customer reply handling remains deferred to F17B.
 
 ## Workspace
 
@@ -45,6 +45,7 @@ npm run reports -- --admin --action claim-pack-register
 npm run corrections -- --admin --action credit-draft --actor operator --input data/pending/correction-input.json
 npm run corrections -- --admin --action cancel-request --actor operator --input data/pending/correction-input.json
 npm run corrections -- --admin --action drive-file --actor operator --input data/pending/correction-input.json
+npm run delivery -- contact list --customer-id 1
 npm run operations -- --admin --actor operator --action permission-audit
 npm run operations -- --admin --actor operator --action disk-audit
 npm run operations -- --admin --actor operator --action rotate-logs
@@ -54,7 +55,9 @@ npm run health
 npm test
 ```
 
-The foundation health check exits successfully when the F16 configuration is healthy. The separate Drive health check validates live access to the approved folder without printing its identity or folder ID. WhatsApp routing remains configured only for RC Finance, while Mira's chat tool surface remains read-only health access.
+The foundation health check exits successfully when the F17A configuration is healthy. The separate Drive health check validates live access to the approved folder without printing its identity or folder ID. WhatsApp routing remains configured only for RC Finance. Mira's chat tool surface adds only the optional prepare/confirm delivery tools while retaining the broad message denial.
+
+F17A delivery contacts live only in the private ledger. A delivery token binds one issued PDF hash, verified contact, channel, requester, and RC Finance context for 15 minutes. The PDF is re-hashed immediately before sending. Provider references are stored only as hashes, and resends require a reason and another confirmation. The ignored `config/customer-delivery.json` controls activation; OAuth material remains outside the repository.
 
 The private runtime ledger is `data/finance.sqlite3`. It is excluded from Git. The F11 pilot uses the separate ignored ledger `data/pilots/f11-pilot.sqlite3`. Document numbers are allocated transactionally in the approved `YYMMDD1001-{CLIENT_INITIALS}` format using one collision-free daily sequence across document types.
 

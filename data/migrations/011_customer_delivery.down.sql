@@ -1,0 +1,5 @@
+DROP TRIGGER customer_delivery_attempts_no_delete;
+DROP TRIGGER customer_delivery_attempts_no_update;
+DROP TABLE customer_delivery_attempts;
+DROP TABLE customer_delivery_requests;
+DROP TABLE customer_delivery_contacts;

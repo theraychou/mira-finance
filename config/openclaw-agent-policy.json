@@ -9,7 +9,9 @@
     "profile": "minimal",
     "alsoAllow": [
       "read",
-      "mira_finance_health"
+      "mira_finance_health",
+      "mira_finance_prepare_delivery",
+      "mira_finance_confirm_delivery"
     ],
     "deny": [
       "write",

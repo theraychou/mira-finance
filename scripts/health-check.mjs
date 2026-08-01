@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { checkDatabase } from './check-database.mjs';
 import { loadDriveConfiguration } from './lib/drive-configuration.mjs';
 import { loadWhatsAppRoutingConfiguration } from './lib/whatsapp-routing.mjs';
+import { loadCustomerDeliveryConfig } from './lib/customer-delivery-config.mjs';
 import { assertDiskSpace } from './lib/runtime-safety.mjs';
 import { runValidation, repositoryRoot } from './validate-config.mjs';
 
@@ -114,7 +115,7 @@ export async function runHealthCheck({ root = repositoryRoot, env = process.env 
   let databaseStatus = 'NOT_CONFIGURED';
   if (databasePresent) {
     const databaseCheck = checkDatabase(path.join(root, 'data', 'finance.sqlite3'));
-    const schemaVersions = { F3: 1, F4: 2, F5: 3, F6: 4, F7: 5, F8: 6, F9: 6, F10: 6, F11: 6, F12: 7, F13: 8, F14: 9, F15: 10, F16: 10 };
+    const schemaVersions = { F3: 1, F4: 2, F5: 3, F6: 4, F7: 5, F8: 6, F9: 6, F10: 6, F11: 6, F12: 7, F13: 8, F14: 9, F15: 10, F16: 10, F17A: 11 };
     const requiredSchemaVersion = schemaVersions[foundation.project.phase] ?? 1;
     const databaseReady = databaseCheck.ok && databaseCheck.schemaVersion >= requiredSchemaVersion;
     databaseStatus = databaseReady ? 'CONFIGURED' : 'FAIL';
@@ -157,6 +158,13 @@ export async function runHealthCheck({ root = repositoryRoot, env = process.env 
     whatsAppConfigured = false;
   }
   checks.push(check('optional:whatsapp', whatsAppConfigured ? 'CONFIGURED' : 'FAIL', 'Phase F10'));
+
+  try {
+    const delivery = await loadCustomerDeliveryConfig({ root });
+    checks.push(check('optional:customer-delivery', delivery.enabled ? 'CONFIGURED' : 'PREPARED', 'Phase F17A outbound only'));
+  } catch {
+    checks.push(check('optional:customer-delivery', 'NOT_CONFIGURED', 'Phase F17A private configuration pending'));
+  }
 
   const healthy = !checks.some((item) => item.status === 'FAIL');
   return { healthy, phase: foundation.project.phase, checks };
