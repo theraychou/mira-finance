@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { checkDatabase } from './check-database.mjs';
 import { loadDriveConfiguration } from './lib/drive-configuration.mjs';
 import { loadWhatsAppRoutingConfiguration } from './lib/whatsapp-routing.mjs';
+import { assertDiskSpace } from './lib/runtime-safety.mjs';
 import { runValidation, repositoryRoot } from './validate-config.mjs';
 
 async function exists(candidate) {
@@ -25,6 +26,16 @@ async function countFiles(root, extension) {
     if (entry.isFile() && entry.name.toLowerCase().endsWith(extension)) total += 1;
   }
   return total;
+}
+
+async function countAlertRecords(root) {
+  try {
+    const content = await readFile(path.join(root, 'logs', 'alerts.jsonl'), 'utf8');
+    return content.split(/\r?\n/).filter(Boolean).length;
+  } catch (error) {
+    if (error.code === 'ENOENT') return 0;
+    throw error;
+  }
 }
 
 function check(name, status, detail) {
@@ -103,7 +114,7 @@ export async function runHealthCheck({ root = repositoryRoot, env = process.env 
   let databaseStatus = 'NOT_CONFIGURED';
   if (databasePresent) {
     const databaseCheck = checkDatabase(path.join(root, 'data', 'finance.sqlite3'));
-    const schemaVersions = { F3: 1, F4: 2, F5: 3, F6: 4, F7: 5, F8: 6, F9: 6, F10: 6, F11: 6, F12: 7, F13: 8, F14: 9, F15: 10 };
+    const schemaVersions = { F3: 1, F4: 2, F5: 3, F6: 4, F7: 5, F8: 6, F9: 6, F10: 6, F11: 6, F12: 7, F13: 8, F14: 9, F15: 10, F16: 10 };
     const requiredSchemaVersion = schemaVersions[foundation.project.phase] ?? 1;
     const databaseReady = databaseCheck.ok && databaseCheck.schemaVersion >= requiredSchemaVersion;
     databaseStatus = databaseReady ? 'CONFIGURED' : 'FAIL';
@@ -112,6 +123,15 @@ export async function runHealthCheck({ root = repositoryRoot, env = process.env 
       : `Database requires schema version ${requiredSchemaVersion} and a passing integrity check`;
   }
   checks.push(check('optional:database', databaseStatus, databaseDetail));
+
+  try {
+    await assertDiskSpace({ targetPath: root, minimumFreeBytes: foundation.operations.minimumFreeBytes, minimumFreeRatio: foundation.operations.minimumFreeRatio });
+    checks.push(check('operations:disk-space', 'PASS', 'production reserve available'));
+  } catch {
+    checks.push(check('operations:disk-space', 'FAIL', 'production reserve unavailable'));
+  }
+  const alertCount = await countAlertRecords(root);
+  checks.push(check('operations:failure-alerts', alertCount > 0 ? 'ATTENTION' : 'PASS', `${alertCount} redacted alert record(s)`));
 
   const templateCount = await countFiles(path.join(root, 'templates', 'normalized'), '.docx');
   checks.push(check('optional:document-templates', templateCount === 6 ? 'CONFIGURED' : 'NOT_CONFIGURED', 'Phase F2'));

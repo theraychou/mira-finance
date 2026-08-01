@@ -11,6 +11,7 @@ import { createStandaloneInvoiceDraft } from './invoice-drafts.mjs';
 import { renderConvertAndFile } from './quotation-renderer.mjs';
 import { renderCreditNoteDocx } from './credit-note-renderer.mjs';
 import { repositoryRoot } from '../validate-config.mjs';
+import { recordFailureAlert } from './runtime-safety.mjs';
 
 const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const TYPES = {
@@ -226,8 +227,29 @@ function reserveCreditNote(database, args) {
   history(database, { documentType: 'credit_note', entityId: row.entity_id, fromStatus: 'PENDING_CONFIRMATION', toStatus: 'GENERATING', actor: args.confirmingUser, now: args.now });
   return {
     creditNoteId: row.entity_id, documentNumberId: allocation.id, documentNumber: allocation.documentNumber,
-    snapshot, actor: args.confirmingUser
+    snapshot, actor: args.confirmingUser, attemptNumber: 1
   };
+}
+
+function reserveCreditNoteRetry(database, { creditNoteId, retryingUser, now }) {
+  const row = database.prepare(`SELECT ci.*,c.status AS credit_status,c.credit_note_number,c.confirmed_by,
+    dn.status AS number_status,s.snapshot_json,s.draft_hash AS current_hash
+    FROM credit_note_issuances ci JOIN credit_notes c ON c.id=ci.credit_note_id
+    JOIN document_numbers dn ON dn.id=ci.document_number_id
+    JOIN credit_note_draft_state s ON s.credit_note_id=ci.credit_note_id WHERE ci.credit_note_id=?`).get(creditNoteId);
+  if (!row) throw new Error('CREDIT_NOTE_ISSUANCE_NOT_FOUND');
+  if (row.status !== 'ISSUE_FAILED' || row.credit_status !== 'ISSUE_FAILED' || row.number_status !== 'ISSUE_FAILED') throw new Error('CREDIT_NOTE_NOT_RETRYABLE');
+  if (row.confirmed_by !== retryingUser) throw new Error('RETRYING_USER_MISMATCH');
+  if (row.draft_hash !== row.current_hash) throw new Error('RETRY_DRAFT_HASH_MISMATCH');
+  const snapshot = JSON.parse(row.snapshot_json);
+  const { availableMinor } = creditAvailability(database, snapshot.originalInvoiceId);
+  if (snapshot.totals.totalMinor > availableMinor) throw new Error('CREDIT_NOTE_EXCEEDS_AVAILABLE_BALANCE');
+  const attemptNumber = row.attempt_count + 1;
+  updateDocumentNumberStatusInTransaction(database, { allocationId: row.document_number_id, status: 'GENERATING', entityId: creditNoteId, now });
+  database.prepare("UPDATE credit_notes SET status='GENERATING' WHERE id=?").run(creditNoteId);
+  database.prepare("UPDATE credit_note_issuances SET status='GENERATING',attempt_count=?,last_error_code=NULL,updated_at=? WHERE credit_note_id=?").run(attemptNumber,now,creditNoteId);
+  history(database, { documentType: 'credit_note', entityId: creditNoteId, fromStatus: 'ISSUE_FAILED', toStatus: 'GENERATING', actor: retryingUser, now });
+  return { creditNoteId, documentNumberId: row.document_number_id, documentNumber: row.credit_note_number, snapshot, actor: retryingUser, attemptNumber };
 }
 
 export class CorrectionError extends Error {
@@ -275,15 +297,16 @@ export async function issueConfirmedCreditNote({
           .run(now, files.pdfSha256, reservation.creditNoteId);
         writable.prepare(`INSERT INTO credit_note_issuance_attempts
           (credit_note_id,attempt_number,result,docx_sha256,pdf_sha256,actor,occurred_at)
-          VALUES (?,1,'SUCCEEDED',?,?,?,?)`).run(
-          reservation.creditNoteId, files.docxSha256, files.pdfSha256, reservation.actor, now
+          VALUES (?,?,'SUCCEEDED',?,?,?,?)`).run(
+          reservation.creditNoteId, reservation.attemptNumber, files.docxSha256, files.pdfSha256, reservation.actor, now
         );
         history(writable, { documentType: 'credit_note', entityId: reservation.creditNoteId, fromStatus: 'GENERATING', toStatus: 'ISSUED', actor: reservation.actor, now });
         audit(writable, { now, actor: reservation.actor, action: 'credit_note.issued', entityType: 'credit_note', entityId: reservation.creditNoteId, afterHash: files.pdfSha256, details: { originalInvoiceId: reservation.snapshot.originalInvoiceId, documentNumber: reservation.documentNumber, totalMinor: reservation.snapshot.totals.totalMinor } });
         return writable.prepare('SELECT * FROM credit_notes WHERE id=?').get(reservation.creditNoteId);
       });
     } catch (error) {
-      await rm(files.docxPath, { force: true }); await rm(files.pdfPath, { force: true });
+      if (files.docxCreated) await rm(files.docxPath, { force: true });
+      if (files.pdfCreated) await rm(files.pdfPath, { force: true });
       throw error;
     } finally { writable.close(); }
   } catch (error) {
@@ -300,10 +323,55 @@ export async function issueConfirmedCreditNote({
           .run(code, now, reservation.creditNoteId);
         writable.prepare(`INSERT INTO credit_note_issuance_attempts
           (credit_note_id,attempt_number,result,error_code,actor,occurred_at)
-          VALUES (?,1,'FAILED',?,?,?)`).run(reservation.creditNoteId, code, reservation.actor, now);
+          VALUES (?,?,'FAILED',?,?,?)`).run(reservation.creditNoteId, reservation.attemptNumber, code, reservation.actor, now);
         history(writable, { documentType: 'credit_note', entityId: reservation.creditNoteId, fromStatus: 'GENERATING', toStatus: 'ISSUE_FAILED', reason: code, actor: reservation.actor, now });
       });
     } finally { writable.close(); }
+    if (!testMode) await recordFailureAlert({ root, code, operation: 'CREDIT_NOTE_ISSUANCE', entityType: 'credit_note', entityId: reservation.creditNoteId, now }).catch(() => {});
+    throw new CorrectionError(code);
+  }
+}
+
+export async function retryCreditNoteIssuance({
+  databasePath, creditNoteId, retryingUser,
+  root = repositoryRoot, outputRoot = path.join(repositoryRoot, 'generated', 'credit-notes'),
+  testMode = false, documentRenderer = renderCreditNoteDocx, pdfConverter, pdfInspector,
+  now = new Date().toISOString()
+}) {
+  instant(now); positiveId(creditNoteId, 'credit_note_id');
+  const database = openDatabase(databasePath); let reservation;
+  try {
+    reservation = withImmediateTransaction(database, () => reserveCreditNoteRetry(database, {
+      creditNoteId, retryingUser: required(retryingUser, 'retrying_user'), now
+    }));
+  } catch (error) { throw new CorrectionError(errorCode(error)); } finally { database.close(); }
+  try {
+    const files = await renderConvertAndFile({ root, outputRoot, snapshot: reservation.snapshot, documentNumber: reservation.documentNumber, testMode, documentRenderer, pdfConverter, pdfInspector });
+    const writable = openDatabase(databasePath);
+    try {
+      return withImmediateTransaction(writable, () => {
+        updateDocumentNumberStatusInTransaction(writable, { allocationId: reservation.documentNumberId, status: 'ISSUED', entityId: reservation.creditNoteId, now });
+        writable.prepare(`UPDATE credit_note_issuances SET status='ISSUED',docx_relative_path=?,pdf_relative_path=?,docx_sha256=?,pdf_sha256=?,issued_by=?,issued_at=?,updated_at=? WHERE credit_note_id=?`)
+          .run(files.docxRelativePath,files.pdfRelativePath,files.docxSha256,files.pdfSha256,reservation.actor,now,now,reservation.creditNoteId);
+        writable.prepare("UPDATE credit_notes SET status='ISSUED',issued_at=?,document_hash=? WHERE id=?").run(now,files.pdfSha256,reservation.creditNoteId);
+        writable.prepare(`INSERT INTO credit_note_issuance_attempts (credit_note_id,attempt_number,result,docx_sha256,pdf_sha256,actor,occurred_at) VALUES (?,?,'SUCCEEDED',?,?,?,?)`)
+          .run(reservation.creditNoteId,reservation.attemptNumber,files.docxSha256,files.pdfSha256,reservation.actor,now);
+        history(writable,{documentType:'credit_note',entityId:reservation.creditNoteId,fromStatus:'GENERATING',toStatus:'ISSUED',actor:reservation.actor,now});
+        audit(writable,{now,actor:reservation.actor,action:'credit_note.issuance_retry_succeeded',entityType:'credit_note',entityId:reservation.creditNoteId,afterHash:files.pdfSha256,details:{attemptNumber:reservation.attemptNumber,documentNumber:reservation.documentNumber}});
+        return writable.prepare('SELECT * FROM credit_notes WHERE id=?').get(reservation.creditNoteId);
+      });
+    } catch (error) { if(files.docxCreated)await rm(files.docxPath,{force:true}); if(files.pdfCreated)await rm(files.pdfPath,{force:true}); throw error; } finally { writable.close(); }
+  } catch (error) {
+    const code = errorCode(error), writable = openDatabase(databasePath);
+    try { withImmediateTransaction(writable, () => {
+      updateDocumentNumberStatusInTransaction(writable,{allocationId:reservation.documentNumberId,status:'ISSUE_FAILED',entityId:reservation.creditNoteId,now});
+      writable.prepare("UPDATE credit_notes SET status='ISSUE_FAILED' WHERE id=?").run(reservation.creditNoteId);
+      writable.prepare("UPDATE credit_note_issuances SET status='ISSUE_FAILED',last_error_code=?,updated_at=? WHERE credit_note_id=?").run(code,now,reservation.creditNoteId);
+      writable.prepare(`INSERT INTO credit_note_issuance_attempts (credit_note_id,attempt_number,result,error_code,actor,occurred_at) VALUES (?,?,'FAILED',?,?,?)`).run(reservation.creditNoteId,reservation.attemptNumber,code,reservation.actor,now);
+      history(writable,{documentType:'credit_note',entityId:reservation.creditNoteId,fromStatus:'GENERATING',toStatus:'ISSUE_FAILED',reason:code,actor:reservation.actor,now});
+      audit(writable,{now,actor:reservation.actor,action:'credit_note.issuance_retry_failed',entityType:'credit_note',entityId:reservation.creditNoteId,result:'FAIL',details:{attemptNumber:reservation.attemptNumber,errorCode:code}});
+    }); } finally { writable.close(); }
+    if (!testMode) await recordFailureAlert({root,code,operation:'CREDIT_NOTE_ISSUANCE',entityType:'credit_note',entityId:reservation.creditNoteId,now}).catch(()=>{});
     throw new CorrectionError(code);
   }
 }

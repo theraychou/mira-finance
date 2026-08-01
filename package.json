@@ -27,6 +27,7 @@
     "supplier-invoices": "node scripts/supplier-invoice.mjs",
     "reports": "node scripts/finance-reports.mjs",
     "corrections": "node scripts/corrections.mjs",
+    "operations": "node scripts/operations.mjs",
     "db:verify-equivalent": "node scripts/verify-ledger-equivalence.mjs",
     "db:migrate": "node scripts/migrate-database.mjs",
     "db:migrate:down": "node scripts/migrate-database.mjs --down",

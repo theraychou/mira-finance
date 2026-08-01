@@ -11,7 +11,7 @@ import { issueConfirmedInvoice } from '../../scripts/lib/invoice-issuance.mjs';
 import {
   confirmDocumentCancellation, createCreditNoteDraft, createReplacementInvoiceDraft,
   createReplacementQuotationDraft, issueConfirmedCreditNote, requestCreditNoteConfirmation,
-  requestDocumentCancellation
+  requestDocumentCancellation, retryCreditNoteIssuance
 } from '../../scripts/lib/corrections.mjs';
 import { createQuotationConfirmationToken, createQuotationDraft } from '../../scripts/lib/quotation-drafts.mjs';
 import { issueConfirmedQuotation } from '../../scripts/lib/quotation-issuance.mjs';
@@ -256,6 +256,20 @@ test('paid invoices and unconfirmed cancellations fail closed', async () => {
       reason: 'TEST / NOT VALID', lines: [{ description: 'TEST / NOT VALID', amount_minor: 1 }],
       actor: 'test-ray'
     }), /CREDIT_NOTE_EXCEEDS_AVAILABLE_BALANCE/);
+  } finally { await cleanup(value); }
+});
+
+test('failed credit-note conversion retries with the same immutable number', async () => {
+  const value = await fixture();
+  try {
+    const invoice = await issueInvoice(value);
+    const draft = createCreditNoteDraft({databasePath:value.databasePath,originalInvoiceId:invoice.id,issueDate:'2026-07-30',reason:'TEST RETRY / NOT VALID',lines:[{description:'TEST CREDIT / NOT VALID',amount_minor:4000}],actor:'test-ray',now:'2026-07-30T00:01:00.000Z'});
+    requestCreditNoteConfirmation({databasePath:value.databasePath,creditNoteId:draft.id,requestingUser:'test-ray',authorisedUser:'test-ray',sourceChannel:'test',sourceChat:'test-chat',tokenFactory:()=> 'CR-GGGGGGGGGG',now:'2026-07-30T00:02:00.000Z'});
+    await assert.rejects(() => issueConfirmedCreditNote({databasePath:value.databasePath,token:'CR-GGGGGGGGGG',confirmingUser:'test-ray',sourceChannel:'test',sourceChat:'test-chat',clientInitials:'SC',root:path.resolve('.'),outputRoot:path.join(value.root,'generated','credit-notes'),testMode:true,pdfConverter:async()=>{throw new Error('PDF_CONVERSION_FAILED');},pdfInspector:inspector,now:'2026-07-30T00:03:00.000Z'}), /PDF_CONVERSION_FAILED/);
+    const failed = openDatabase(value.databasePath,{readOnly:true}); const number=failed.prepare('SELECT credit_note_number FROM credit_notes WHERE id=?').get(draft.id).credit_note_number; failed.close();
+    const retried = await retryCreditNoteIssuance({databasePath:value.databasePath,creditNoteId:draft.id,retryingUser:'test-ray',root:path.resolve('.'),outputRoot:path.join(value.root,'generated','credit-notes'),testMode:true,pdfConverter:creditPdf,pdfInspector:inspector,now:'2026-07-30T00:04:00.000Z'});
+    assert.equal(retried.status,'ISSUED'); assert.equal(retried.credit_note_number,number);
+    const database=openDatabase(value.databasePath,{readOnly:true}); assert.equal(database.prepare('SELECT attempt_count FROM credit_note_issuances WHERE credit_note_id=?').get(draft.id).attempt_count,2); database.close();
   } finally { await cleanup(value); }
 });
 

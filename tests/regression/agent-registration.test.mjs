@@ -4,7 +4,7 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { repositoryRoot } from '../../scripts/validate-config.mjs';
 
-test('F15 policy isolates Mira and keeps finance mutations outside WhatsApp tools', async () => {
+test('F16 policy isolates Mira and keeps finance mutations outside WhatsApp tools', async () => {
   const policy = JSON.parse(await readFile(path.join(repositoryRoot, 'config/openclaw-agent-policy.json'), 'utf8'));
   assert.equal(policy.agentId, 'mira-finance');
   assert.equal(policy.displayName, 'Mira');
@@ -20,6 +20,24 @@ test('F15 policy isolates Mira and keeps finance mutations outside WhatsApp tool
   for (const denied of ['message', 'sessions_list', 'sessions_history', 'sessions_send', 'sessions_spawn', 'web_search', 'web_fetch']) {
     assert.ok(policy.tools.deny.includes(denied));
   }
+});
+
+test('production operations CLI is fail-closed and not exposed through WhatsApp', async () => {
+  const executable = await readFile(path.join(repositoryRoot, 'scripts/operations.mjs'), 'utf8');
+  const manifest = JSON.parse(await readFile(path.join(repositoryRoot, 'extensions/mira-finance-health/openclaw.plugin.json'), 'utf8'));
+  assert.match(executable, /--admin/);
+  assert.match(executable, /--actor/);
+  assert.doesNotMatch(executable, /sendMessage|\/root\/clawd|client_secret|refresh_token|private_key/i);
+  assert.deepEqual(manifest.contracts.tools, ['mira_finance_health']);
+});
+
+test('F16 maintenance timer is private, bounded, and cannot restart OpenClaw', async () => {
+  const service = await readFile(path.join(repositoryRoot, 'ops/systemd/mira-finance-maintenance.service'), 'utf8');
+  const timer = await readFile(path.join(repositoryRoot, 'ops/systemd/mira-finance-maintenance.timer'), 'utf8');
+  assert.match(service, /UMask=0077/); assert.match(service, /NoNewPrivileges=true/); assert.match(service, /ProtectSystem=strict/);
+  assert.match(service, /cleanup-temp/); assert.match(service, /rotate-logs/); assert.match(service, /disk-audit/); assert.match(service, /permission-audit/);
+  assert.doesNotMatch(`${service}\n${timer}`, /openclaw.*(restart|stop|start)|message|send/i);
+  assert.match(timer, /Asia\/Kuala_Lumpur/); assert.match(timer, /Persistent=true/);
 });
 
 test('correction CLI is fail-closed and is not exposed as a WhatsApp tool', async () => {
@@ -43,6 +61,7 @@ test('finance health plugin declares one no-argument tool', async () => {
   assert.deepEqual(manifest.contracts.tools, ['mira_finance_health']);
   assert.match(source, /additionalProperties: false/);
   assert.match(source, /name === 'optional:whatsapp'/);
+  assert.match(source, /operations:failure-alerts/);
   assert.doesNotMatch(source, /whatsApp:\s*'NOT_CONFIGURED'/);
   assert.doesNotMatch(source, /child_process|execFile|spawn|client_secret|refresh_token|private_key/i);
 });

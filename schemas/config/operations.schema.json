@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "operations.schema.json",
+  "title": "Mira Finance production operations policy",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["minimumFreeBytes", "minimumFreeRatio", "logRotationMaximumBytes", "logRotationRetained", "temporaryFileMaximumAgeHours", "interruptedIssuanceMinutes"],
+  "properties": {
+    "minimumFreeBytes": {"type": "integer", "minimum": 67108864, "const": 268435456},
+    "minimumFreeRatio": {"type": "number", "minimum": 0.01, "maximum": 0.5, "const": 0.05},
+    "logRotationMaximumBytes": {"type": "integer", "minimum": 1048576, "const": 5242880},
+    "logRotationRetained": {"type": "integer", "minimum": 1, "maximum": 20, "const": 5},
+    "temporaryFileMaximumAgeHours": {"type": "integer", "minimum": 1, "const": 24},
+    "interruptedIssuanceMinutes": {"type": "integer", "minimum": 5, "const": 30}
+  }
+}

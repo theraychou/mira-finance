@@ -20,6 +20,7 @@ const report = {
     database: workspace.checks.find((item) => item.name === 'optional:database')?.status ?? 'FAIL',
     templates: workspace.checks.find((item) => item.name === 'optional:document-templates')?.status ?? 'FAIL',
     googleDrive: drive.healthy ? 'PASS' : 'FAIL',
+    alerts: workspace.checks.find((item) => item.name === 'operations:failure-alerts')?.status ?? 'FAIL',
     whatsApp: 'NOT_CONFIGURED'
   }
 };

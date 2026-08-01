@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { checkDatabase } from './check-database.mjs';
 import { defaultDatabasePath, openDatabase } from './lib/database.mjs';
 import { repositoryRoot } from './validate-config.mjs';
+import { assertDiskSpace } from './lib/runtime-safety.mjs';
 
 async function exists(candidate) {
   try {
@@ -21,6 +22,7 @@ export async function backupDatabase({ sourcePath = defaultDatabasePath, destina
   const resolvedDestination = path.resolve(destinationPath);
   if (await exists(resolvedDestination)) throw new Error('Backup destination already exists.');
   await mkdir(path.dirname(resolvedDestination), { recursive: true, mode: 0o700 });
+  await assertDiskSpace({ targetPath: path.dirname(resolvedDestination) });
   const temporary = `${resolvedDestination}.tmp-${process.pid}`;
   const database = openDatabase(sourcePath);
   try {

@@ -4,7 +4,7 @@
   "project": {
     "agentId": "mira-finance",
     "displayName": "Mira",
-    "phase": "F15"
+    "phase": "F16"
   },
   "workspace": {
     "path": "/root/.workspaces/mira-finance",
@@ -30,5 +30,13 @@
     "documentTemplates": "configured",
     "googleDrive": "configured",
     "whatsApp": "configured"
+  },
+  "operations": {
+    "minimumFreeBytes": 268435456,
+    "minimumFreeRatio": 0.05,
+    "logRotationMaximumBytes": 5242880,
+    "logRotationRetained": 5,
+    "temporaryFileMaximumAgeHours": 24,
+    "interruptedIssuanceMinutes": 30
   }
 }

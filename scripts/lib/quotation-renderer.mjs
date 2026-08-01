@@ -16,6 +16,7 @@ import {
   sha256
 } from './template-contract.mjs';
 import { repositoryRoot } from '../validate-config.mjs';
+import { assertDiskSpace } from './runtime-safety.mjs';
 
 const execFileAsync = promisify(execFile);
 const MONTHS = [
@@ -207,6 +208,18 @@ export async function publishImmutableBuffer(filePath, buffer) {
   return filePath;
 }
 
+async function publishOrVerifyImmutable(filePath, buffer) {
+  try {
+    await publishImmutableBuffer(filePath, buffer);
+    return { created: true };
+  } catch (error) {
+    if (error.code !== 'EEXIST') throw error;
+    const existing = await readFile(filePath);
+    if (sha256(existing) !== sha256(buffer)) throw new Error('IMMUTABLE_OUTPUT_CONFLICT');
+    return { created: false };
+  }
+}
+
 export async function renderConvertAndFile({
   root = repositoryRoot, outputRoot = path.join(repositoryRoot, 'generated', 'quotations'),
   snapshot, documentNumber, testMode = false,
@@ -216,6 +229,7 @@ export async function renderConvertAndFile({
 }) {
   const resolvedOutputRoot = path.resolve(outputRoot);
   await mkdir(resolvedOutputRoot, { recursive: true, mode: 0o700 });
+  await assertDiskSpace({ targetPath: resolvedOutputRoot, requiredBytes: 32 * 1024 * 1024 });
   const staging = await mkdtemp(path.join(resolvedOutputRoot, '.staging-'));
   const relativeDirectory = path.join(snapshot.issueDate.slice(0, 4), snapshot.issueDate.slice(5, 7));
   const docxRelativePath = path.join(relativeDirectory, `${documentNumber}.docx`);
@@ -234,16 +248,18 @@ export async function renderConvertAndFile({
       docxBuffer: rendered.buffer, pdfBuffer, pdfInspection: inspection,
       snapshot, documentNumber, testMode
     });
-    await publishImmutableBuffer(finalDocx, rendered.buffer);
-    published.push(finalDocx);
-    await publishImmutableBuffer(finalPdf, pdfBuffer);
-    published.push(finalPdf);
+    const docxCreated = (await publishOrVerifyImmutable(finalDocx, rendered.buffer)).created;
+    if (docxCreated) published.push(finalDocx);
+    const pdfCreated = (await publishOrVerifyImmutable(finalPdf, pdfBuffer)).created;
+    if (pdfCreated) published.push(finalPdf);
     return {
       ...validation,
       docxRelativePath: docxRelativePath.split(path.sep).join('/'),
       pdfRelativePath: pdfRelativePath.split(path.sep).join('/'),
       docxPath: finalDocx,
-      pdfPath: finalPdf
+      pdfPath: finalPdf,
+      docxCreated,
+      pdfCreated
     };
   } catch (error) {
     for (const candidate of published.reverse()) await rm(candidate, { force: true });

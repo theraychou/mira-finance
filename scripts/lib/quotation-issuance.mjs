@@ -8,6 +8,7 @@ import {
 import { canonicalJson } from './quotation-drafts.mjs';
 import { renderConvertAndFile } from './quotation-renderer.mjs';
 import { repositoryRoot } from '../validate-config.mjs';
+import { recordFailureAlert } from './runtime-safety.mjs';
 
 function requireText(value, name) {
   if (typeof value !== 'string' || value.trim().length === 0) throw new TypeError(`${name} is required.`);
@@ -277,12 +278,13 @@ async function executeReservedIssuance({
     try {
       return recordSuccess(databasePath, reservation, files, now);
     } catch (error) {
-      await rm(files.docxPath, { force: true });
-      await rm(files.pdfPath, { force: true });
+      if (files.docxCreated) await rm(files.docxPath, { force: true });
+      if (files.pdfCreated) await rm(files.pdfPath, { force: true });
       throw error;
     }
   } catch (error) {
     const code = recordFailure(databasePath, reservation, error, now);
+    if (!testMode) await recordFailureAlert({ root, code, operation: 'QUOTATION_ISSUANCE', entityType: 'quotation', entityId: reservation.quotationId, now }).catch(() => {});
     throw new QuotationIssuanceError(code);
   }
 }

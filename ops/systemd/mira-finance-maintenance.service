@@ -1,0 +1,19 @@
+[Unit]
+Description=Mira Finance private production maintenance
+After=local-fs.target
+
+[Service]
+Type=oneshot
+UMask=0077
+WorkingDirectory=/root/.workspaces/mira-finance
+ExecStart=/usr/bin/node scripts/operations.mjs --admin --actor system-maintenance --action cleanup-temp
+ExecStart=/usr/bin/node scripts/operations.mjs --admin --actor system-maintenance --action rotate-logs
+ExecStart=/usr/bin/node scripts/operations.mjs --admin --actor system-maintenance --action disk-audit
+ExecStart=/usr/bin/node scripts/operations.mjs --admin --actor system-maintenance --action permission-audit
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=/root/.workspaces/mira-finance
+
+[Install]
+WantedBy=default.target

@@ -11,7 +11,8 @@
     "workspace",
     "features",
     "logging",
-    "optionalIntegrations"
+    "optionalIntegrations",
+    "operations"
   ],
   "properties": {
     "$schema": {
@@ -28,7 +29,7 @@
       "properties": {
         "agentId": {"type": "string", "const": "mira-finance"},
         "displayName": {"type": "string", "const": "Mira"},
-        "phase": {"type": "string", "const": "F15"}
+        "phase": {"type": "string", "const": "F16"}
       }
     },
     "workspace": {
@@ -56,6 +57,7 @@
         "googleDrive": {"type": "string", "const": "configured"},
         "whatsApp": {"type": "string", "const": "configured"}
       }
-    }
+    },
+    "operations": {"$ref": "operations.schema.json"}
   }
 }

@@ -8,7 +8,7 @@ test('foundation configuration passes its schema', async () => {
   assert.equal(result.ok, true, result.errors.join('\n'));
 });
 
-test('foundation schema rejects disabling the approved F15 WhatsApp feature', async () => {
+test('foundation schema rejects disabling the approved F16 WhatsApp feature', async () => {
   const invalid = {
     database: true,
     documentGeneration: true,

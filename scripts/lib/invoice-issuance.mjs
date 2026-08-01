@@ -6,6 +6,7 @@ import { canonicalJson } from './quotation-drafts.mjs';
 import { renderConvertAndFile } from './quotation-renderer.mjs';
 import { renderInvoiceDocx } from './invoice-renderer.mjs';
 import { repositoryRoot } from '../validate-config.mjs';
+import { recordFailureAlert } from './runtime-safety.mjs';
 
 function text(value, name) { if (typeof value !== 'string' || !value.trim()) throw new TypeError(`${name} is required.`); return value.trim(); }
 function instant(value) { const date = new Date(value); if (typeof value !== 'string' || Number.isNaN(date.valueOf()) || date.toISOString() !== value) throw new TypeError('now must be an ISO-8601 UTC instant.'); }
@@ -57,6 +58,24 @@ function reserve(database, args) {
   return { invoiceId:row.draft_id, documentNumberId:allocation.id, documentNumber:allocation.documentNumber, snapshot, actor:args.confirmingUser, attemptNumber:1 };
 }
 
+function reserveRetry(database, { invoiceId, retryingUser, now }) {
+  const row = database.prepare(`SELECT ii.*,i.status AS invoice_status,i.invoice_number,i.confirmed_by,
+    dn.status AS number_status,s.snapshot_json,s.draft_hash AS current_draft_hash
+    FROM invoice_issuances ii JOIN invoices i ON i.id=ii.invoice_id
+    JOIN document_numbers dn ON dn.id=ii.document_number_id
+    JOIN invoice_draft_state s ON s.invoice_id=ii.invoice_id WHERE ii.invoice_id=?`).get(invoiceId);
+  if (!row) throw new Error('INVOICE_ISSUANCE_NOT_FOUND');
+  if (row.status !== 'ISSUE_FAILED' || row.invoice_status !== 'ISSUE_FAILED' || row.number_status !== 'ISSUE_FAILED') throw new Error('INVOICE_NOT_RETRYABLE');
+  if (row.confirmed_by !== retryingUser) throw new Error('RETRYING_USER_MISMATCH');
+  if (row.draft_hash !== row.current_draft_hash) throw new Error('RETRY_DRAFT_HASH_MISMATCH');
+  const attemptNumber = row.attempt_count + 1;
+  updateDocumentNumberStatusInTransaction(database,{allocationId:row.document_number_id,status:'GENERATING',entityId:invoiceId,now});
+  database.prepare("UPDATE invoices SET status='GENERATING' WHERE id=?").run(invoiceId);
+  database.prepare("UPDATE invoice_issuances SET status='GENERATING',attempt_count=?,last_error_code=NULL,updated_at=? WHERE invoice_id=?").run(attemptNumber,now,invoiceId);
+  audit(database,now,retryingUser,'invoice.issuance_retry_started',invoiceId,'PASS',{documentNumber:row.invoice_number,attemptNumber},row.draft_hash);
+  return { invoiceId, documentNumberId:row.document_number_id, documentNumber:row.invoice_number, snapshot:JSON.parse(row.snapshot_json), actor:retryingUser, attemptNumber };
+}
+
 function fail(databasePath, reservation, error, now) {
   const errorCode = code(error); const database = openDatabase(databasePath);
   try { withImmediateTransaction(database, () => {
@@ -65,8 +84,8 @@ function fail(databasePath, reservation, error, now) {
     updateDocumentNumberStatusInTransaction(database,{allocationId:reservation.documentNumberId,status:'ISSUE_FAILED',entityId:reservation.invoiceId,now});
     database.prepare("UPDATE invoices SET status='ISSUE_FAILED' WHERE id=?").run(reservation.invoiceId);
     database.prepare("UPDATE invoice_issuances SET status='ISSUE_FAILED',last_error_code=?,updated_at=? WHERE invoice_id=?").run(errorCode,now,reservation.invoiceId);
-    database.prepare(`INSERT INTO invoice_issuance_attempts (invoice_id,attempt_number,result,error_code,actor,occurred_at) VALUES (?,1,'FAILED',?,?,?)`).run(reservation.invoiceId,errorCode,reservation.actor,now);
-    audit(database,now,reservation.actor,'invoice.issuance_failed',reservation.invoiceId,'FAIL',{documentNumber:reservation.documentNumber,errorCode,attemptNumber:1});
+    database.prepare(`INSERT INTO invoice_issuance_attempts (invoice_id,attempt_number,result,error_code,actor,occurred_at) VALUES (?,?,'FAILED',?,?,?)`).run(reservation.invoiceId,reservation.attemptNumber,errorCode,reservation.actor,now);
+    audit(database,now,reservation.actor,'invoice.issuance_failed',reservation.invoiceId,'FAIL',{documentNumber:reservation.documentNumber,errorCode,attemptNumber:reservation.attemptNumber});
   }); } finally { database.close(); }
   return errorCode;
 }
@@ -91,9 +110,9 @@ function succeed(databasePath, reservation, files, now) {
         recharge.id, reservation.actor, canonicalJson({ invoiceId: reservation.invoiceId, documentNumber: reservation.documentNumber }), now
       );
     }
-    database.prepare(`INSERT INTO invoice_issuance_attempts (invoice_id,attempt_number,result,docx_sha256,pdf_sha256,actor,occurred_at) VALUES (?,1,'SUCCEEDED',?,?,?,?)`)
-      .run(reservation.invoiceId,files.docxSha256,files.pdfSha256,reservation.actor,now);
-    audit(database,now,reservation.actor,'invoice.issued',reservation.invoiceId,'PASS',{documentNumber:reservation.documentNumber,docxSha256:files.docxSha256,pdfSha256:files.pdfSha256,attemptNumber:1},files.pdfSha256);
+    database.prepare(`INSERT INTO invoice_issuance_attempts (invoice_id,attempt_number,result,docx_sha256,pdf_sha256,actor,occurred_at) VALUES (?,?,'SUCCEEDED',?,?,?,?)`)
+      .run(reservation.invoiceId,reservation.attemptNumber,files.docxSha256,files.pdfSha256,reservation.actor,now);
+    audit(database,now,reservation.actor,'invoice.issued',reservation.invoiceId,'PASS',{documentNumber:reservation.documentNumber,docxSha256:files.docxSha256,pdfSha256:files.pdfSha256,attemptNumber:reservation.attemptNumber},files.pdfSha256);
     return database.prepare(`SELECT ii.*,i.invoice_number,i.status AS invoice_status,i.payment_status,i.balance_due_minor FROM invoice_issuances ii JOIN invoices i ON i.id=ii.invoice_id WHERE ii.invoice_id=?`).get(reservation.invoiceId);
   }); } finally { database.close(); }
 }
@@ -104,8 +123,21 @@ export async function issueConfirmedInvoice({ databasePath,token,confirmingUser,
   const database=openDatabase(databasePath); let reservation;
   try { reservation=withImmediateTransaction(database,()=>reserve(database,args)); if(reservation.rejectedCode) throw new InvoiceIssuanceError(reservation.rejectedCode); }
   catch(error){ if(error instanceof InvoiceIssuanceError) throw error; throw new InvoiceIssuanceError(code(error)); } finally { database.close(); }
+  return executeReservedInvoice({databasePath,reservation,root,outputRoot,testMode,documentRenderer,pdfConverter,pdfInspector,now});
+}
+
+async function executeReservedInvoice({databasePath,reservation,root,outputRoot,testMode,documentRenderer,pdfConverter,pdfInspector,now}) {
   try {
     const files=await renderConvertAndFile({root,outputRoot,snapshot:reservation.snapshot,documentNumber:reservation.documentNumber,testMode,documentRenderer,pdfConverter,pdfInspector});
-    try { return succeed(databasePath,reservation,files,now); } catch(error) { await rm(files.docxPath,{force:true}); await rm(files.pdfPath,{force:true}); throw error; }
-  } catch(error) { throw new InvoiceIssuanceError(fail(databasePath,reservation,error,now)); }
+    try { return succeed(databasePath,reservation,files,now); } catch(error) { if(files.docxCreated)await rm(files.docxPath,{force:true}); if(files.pdfCreated)await rm(files.pdfPath,{force:true}); throw error; }
+  } catch(error) { const errorCode=fail(databasePath,reservation,error,now);if(!testMode)await recordFailureAlert({root,code:errorCode,operation:'INVOICE_ISSUANCE',entityType:'invoice',entityId:reservation.invoiceId,now}).catch(()=>{});throw new InvoiceIssuanceError(errorCode); }
+}
+
+export async function retryInvoiceIssuance({ databasePath,invoiceId,retryingUser,
+  root=repositoryRoot,outputRoot=path.join(repositoryRoot,'generated','invoices'),testMode=false,documentRenderer=renderInvoiceDocx,pdfConverter,pdfInspector,now=new Date().toISOString() }) {
+  instant(now); if(!Number.isSafeInteger(invoiceId)||invoiceId<1)throw new TypeError('invoiceId must be a positive integer.');
+  const user=text(retryingUser,'retryingUser'),database=openDatabase(databasePath);let reservation;
+  try{reservation=withImmediateTransaction(database,()=>reserveRetry(database,{invoiceId,retryingUser:user,now}));}
+  catch(error){throw new InvoiceIssuanceError(code(error));}finally{database.close();}
+  return executeReservedInvoice({databasePath,reservation,root,outputRoot,testMode,documentRenderer,pdfConverter,pdfInspector,now});
 }

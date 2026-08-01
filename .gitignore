@@ -30,6 +30,8 @@ data/locks/*
 !data/locks/.gitkeep
 data/backups/*
 !data/backups/.gitkeep
+data/restore-drills/*
+!data/restore-drills/.gitkeep
 data/pilots/*
 !data/pilots/.gitkeep
 data/claims/inbox/*
@@ -47,6 +49,7 @@ generated/*
 generated/*/*
 !generated/*/.gitkeep
 logs/*.jsonl
+logs/*.jsonl.*
 !logs/.gitkeep
 tests/generated-output/*
 !tests/generated-output/.gitkeep

@@ -1,0 +1,11 @@
+[Unit]
+Description=Run Mira Finance production maintenance daily
+
+[Timer]
+OnCalendar=*-*-* 03:15:00 Asia/Kuala_Lumpur
+Persistent=true
+RandomizedDelaySec=300
+Unit=mira-finance-maintenance.service
+
+[Install]
+WantedBy=timers.target

@@ -13,7 +13,7 @@ async function exists(relative) {
   }
 }
 
-test('Phase F15 preserves approved integrations and enables controlled corrections', async () => {
+test('Phase F16 preserves approved integrations and enables production hardening', async () => {
   const foundation = JSON.parse(await readFile(path.join(repositoryRoot, 'config/foundation.json'), 'utf8'));
   assert.deepEqual(foundation.features, {
     database: true,
@@ -25,9 +25,11 @@ test('Phase F15 preserves approved integrations and enables controlled correctio
     reports: true,
     corrections: true
   });
+  assert.equal(foundation.project.phase, 'F16');
+  assert.equal(foundation.operations.minimumFreeBytes, 268435456);
 });
 
-test('F15 retains all six templates and all ten reversible database migrations', async () => {
+test('F16 retains all six templates and all ten reversible database migrations', async () => {
   assert.equal(await exists('data/migrations/001_initial.up.sql'), true);
   assert.equal(await exists('data/migrations/001_initial.down.sql'), true);
   assert.equal(await exists('data/migrations/002_registries.up.sql'), true);
@@ -55,6 +57,13 @@ test('F15 retains all six templates and all ten reversible database migrations',
   assert.equal(await exists('schemas/supplier-invoice-draft.schema.json'), true);
   assert.equal(await exists('docs/phase-f14-boundary.md'), true);
   assert.equal(await exists('docs/phase-f15-boundary.md'), true);
+  assert.equal(await exists('docs/phase-f16-boundary.md'), true);
+  assert.equal(await exists('docs/operations-guide.md'), true);
+  assert.equal(await exists('docs/recovery-guide.md'), true);
+  assert.equal(await exists('docs/security-guide.md'), true);
+  assert.equal(await exists('docs/dependency-audit-2026-08-01.md'), true);
+  assert.equal(await exists('ops/systemd/mira-finance-maintenance.service'), true);
+  assert.equal(await exists('ops/systemd/mira-finance-maintenance.timer'), true);
   const currencies = ['myr', 'sgd', 'usd'];
   for (const currency of currencies) {
     const sourceFiles = await readdir(path.join(repositoryRoot, 'templates', 'source', currency));
@@ -80,6 +89,8 @@ test('source specification and sensitive runtime files are ignored', async () =>
     'downloads/',
     'data/*.sqlite3',
     'data/*.sqlite3-*',
+    'data/restore-drills/*',
+    'logs/*.jsonl.*',
     'templates/**/*.docx',
     '.env'
   ]) {

@@ -6,6 +6,7 @@ import { approvedFolderFor, loadDriveConfiguration } from './drive-configuration
 import { createGogDriveClient, DriveClientError } from './gog-drive-client.mjs';
 import { canonicalJson } from './quotation-drafts.mjs';
 import { repositoryRoot } from '../validate-config.mjs';
+import { recordFailureAlert } from './runtime-safety.mjs';
 
 const TYPES={quotation:{entityTable:'quotations',issuanceTable:'quotation_issuances',idColumn:'quotation_id',numberColumn:'quotation_number',outputDirectory:'quotations'},invoice:{entityTable:'invoices',issuanceTable:'invoice_issuances',idColumn:'invoice_id',numberColumn:'invoice_number',outputDirectory:'invoices'}};
 function text(value,name){if(typeof value!=='string'||!value.trim())throw new TypeError(`${name} is required.`);return value.trim();}
@@ -76,7 +77,7 @@ function recordSuccess(databasePath,reservation,remote,verifiedHash,actor,now){c
   return database.prepare('SELECT * FROM drive_uploads WHERE id=?').get(reservation.row.id);
 });}finally{database.close();}}
 
-async function processUpload({databasePath,upload,client,actor,now}){
+async function processUpload({databasePath,upload,client,actor,root,now}){
   const reservation=reserveAttempt(databasePath,upload.id,actor,now);if(reservation.completed)return reservation.row;
   try{
     const candidates=await client.findByName({name:upload.file_name,parentId:upload.folder_id});
@@ -86,7 +87,7 @@ async function processUpload({databasePath,upload,client,actor,now}){
     if(remote.name!==upload.file_name||remote.size!==upload.local_size||!remote.parents.includes(upload.folder_id))throw new DriveClientError('DRIVE_UPLOAD_VERIFICATION_FAILED');
     let verifiedHash=null;if(remote.md5Checksum){if(remote.md5Checksum.toLowerCase()!==upload.localMd5)throw new DriveClientError('DRIVE_UPLOAD_HASH_MISMATCH');verifiedHash=`md5:${remote.md5Checksum.toLowerCase()}`;}
     return recordSuccess(databasePath,reservation,remote,verifiedHash,actor,now);
-  }catch(error){return{...reservation.row,...recordFailure(databasePath,reservation,error,actor,now)};}
+  }catch(error){const failure=recordFailure(databasePath,reservation,error,actor,now);await recordFailureAlert({root,code:failure.errorCode,operation:'DRIVE_UPLOAD',entityType:reservation.row.document_type,entityId:reservation.row.entity_id,now}).catch(()=>{});return{...reservation.row,...failure};}
 }
 
 export async function validateApprovedDriveFolder({configuration,client}){
@@ -100,7 +101,7 @@ export async function uploadIssuedDocument({databasePath,documentType,entityId,a
   const config=configuration??await loadDriveConfiguration({root});const drive=client??createGogDriveClient(config);
   await validateApprovedDriveFolder({configuration:config,client:drive});
   const queued=await sourceArtifacts({databasePath,documentType,entityId,root,configuration:config,now,actor});
-  const results=[];for(const upload of queued)results.push(await processUpload({databasePath,upload,client:drive,actor,now}));
+  const results=[];for(const upload of queued)results.push(await processUpload({databasePath,upload,client:drive,actor,root,now}));
   return{documentType,entityId,status:results.every(row=>row.status==='COMPLETED')?'COMPLETED':'PENDING',uploads:results};
 }
 
@@ -108,6 +109,6 @@ export async function retryDueDriveUploads({databasePath,actor,root=repositoryRo
   instant(now);text(actor,'actor');const config=configuration??await loadDriveConfiguration({root}),drive=client??createGogDriveClient(config);
   await validateApprovedDriveFolder({configuration:config,client:drive});const database=openDatabase(databasePath,{readOnly:true});let rows;
   try{rows=database.prepare("SELECT * FROM drive_uploads WHERE status='RETRY_PENDING' AND next_attempt_at<=? ORDER BY id").all(now);}finally{database.close();}
-  const results=[];for(const row of rows){const definition=TYPES[row.document_type],filePath=safePath(path.join(root,'generated',definition.outputDirectory),row.local_relative_path),buffer=await readFile(filePath);results.push(await processUpload({databasePath,upload:{...row,filePath,localMd5:md5(buffer)},client:drive,actor,now}));}
+  const results=[];for(const row of rows){const definition=TYPES[row.document_type],filePath=safePath(path.join(root,'generated',definition.outputDirectory),row.local_relative_path),buffer=await readFile(filePath);results.push(await processUpload({databasePath,upload:{...row,filePath,localMd5:md5(buffer)},client:drive,actor,root,now}));}
   return results;
 }

@@ -32,6 +32,6 @@ This is the isolated repository and future workspace for OpenClaw Finance Agent 
 
 Before each phase: read the build specification and prior completion report, inspect relevant files, rerun the previous acceptance checks, inspect Git state, and back up anything that will change. Then implement only the current phase, run focused and regression tests, and provide the standard completion report.
 
-## Phase F15 status
+## Phase F16 status
 
-Mira remains isolated and only the dedicated `RC Finance` WhatsApp group routes to her. F15 adds controlled credit notes, cancellations, replacement-document links, correction status history, credit-aware reports, and private correction Drive filing. Every action preserves the issued original and permanently retires its allocated number. Credit notes and cancellations require Ray-only, context-bound confirmation. Paid or partially paid invoices cannot be cancelled, and F15 performs no refunds, payment reversals, customer delivery, or F16 hardening. Finance mutations remain fail-closed administrator workflows and are not exposed as automatic WhatsApp tools.
+Mira remains isolated and only the dedicated `RC Finance` WhatsApp group routes to her. F16 adds production safety checks, verified restore drills, bounded operational files, redacted alerts, and recoverable interrupted issuance. Every retry keeps the original confirmed snapshot and allocated number. Finance mutations remain fail-closed administrator workflows and are not exposed as automatic WhatsApp tools.
