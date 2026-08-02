@@ -78,6 +78,7 @@ export default definePluginEntry({
         async execute(_id, params) {
           try {
             const [trusted, inbound, delivery] = await Promise.all([raySource(ctx), loadCustomerInboundConfig(), loadCustomerDeliveryConfig()]);
+            if (!inbound.enabled) throw Object.assign(new Error('CUSTOMER_INBOUND_DISABLED'), { code: 'CUSTOMER_INBOUND_DISABLED' });
             return result(prepareEscalationReply({ databasePath: defaultDatabasePath, token: params.escalationToken, response: params.response,
               ...trusted, confirmationTtlMinutes: inbound.confirmationTtlMinutes, signature: delivery.signature }));
           } catch (error) { return result({ status: 'FAIL', code: safeFailure(error) }); }
@@ -92,6 +93,7 @@ export default definePluginEntry({
         async execute(_id, params) {
           try {
             const [trusted, inbound] = await Promise.all([raySource(ctx), loadCustomerInboundConfig()]);
+            if (!inbound.enabled) throw Object.assign(new Error('CUSTOMER_INBOUND_DISABLED'), { code: 'CUSTOMER_INBOUND_DISABLED' });
             const clients = await replyClients(inbound);
             return result(await confirmEscalationReply({ databasePath: defaultDatabasePath, confirmationToken: params.confirmationToken,
               confirmingUser: trusted.requestingUser, sourceChannel: trusted.sourceChannel, sourceChat: trusted.sourceChat,
