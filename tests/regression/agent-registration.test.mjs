@@ -27,6 +27,7 @@ test('customer inbound plugin is deterministic and confirmation-gated', async ()
   const source = await readFile(path.join(repositoryRoot, 'extensions/mira-finance-inbound/index.js'), 'utf8');
   assert.deepEqual(manifest.contracts.tools, ['mira_finance_prepare_customer_reply', 'mira_finance_confirm_customer_reply']);
   assert.match(source, /before_dispatch/); assert.match(source, /message_sent/); assert.match(source, /loadCustomerInboundConfig/);
+  assert.match(source, /mira-finance-inbound-before-dispatch/); assert.match(source, /mira-finance-inbound-message-sent/);
   assert.doesNotMatch(source, /\/root\/clawd|client_secret|refresh_token|private_key/i);
 });
 

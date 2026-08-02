@@ -58,7 +58,7 @@ export default definePluginEntry({
         api.logger.warn(`Mira inbound WhatsApp handling failed (${safeFailure(error)}).`);
         return;
       }
-    });
+    }, { name: 'mira-finance-inbound-before-dispatch', description: 'Claim verified customer WhatsApp replies before agent dispatch.' });
 
     api.registerHook('message_sent', async (event, ctx) => {
       if (ctx.channelId !== 'whatsapp' || !ctx.sessionKey || typeof event.content !== 'string') return;
@@ -66,7 +66,7 @@ export default definePluginEntry({
         recordDeferredResponseBySession({ databasePath: defaultDatabasePath, channel: 'WHATSAPP', sessionKey: ctx.sessionKey,
           content: event.content, success: event.success, providerReference: event.messageId ?? null });
       } catch (error) { api.logger.warn(`Mira inbound delivery audit failed (${safeFailure(error)}).`); }
-    });
+    }, { name: 'mira-finance-inbound-message-sent', description: 'Record source-reply delivery outcome without retaining provider identifiers.' });
 
     api.registerTool((ctx) => {
       const prepare = {
