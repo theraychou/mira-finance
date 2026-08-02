@@ -1,0 +1,5 @@
+DROP TRIGGER customer_inbound_response_attempts_no_delete;
+DROP TRIGGER customer_inbound_response_attempts_no_update;
+DROP TABLE customer_inbound_response_attempts;
+DROP TABLE customer_reply_escalations;
+DROP TABLE customer_inbound_messages;

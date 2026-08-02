@@ -28,6 +28,7 @@
     "reports": "node scripts/finance-reports.mjs",
     "corrections": "node scripts/corrections.mjs",
     "delivery": "node scripts/customer-delivery.mjs",
+    "inbound:poll": "node scripts/customer-inbound.mjs",
     "operations": "node scripts/operations.mjs",
     "db:verify-equivalent": "node scripts/verify-ledger-equivalence.mjs",
     "db:migrate": "node scripts/migrate-database.mjs",

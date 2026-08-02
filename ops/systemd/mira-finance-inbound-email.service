@@ -1,0 +1,13 @@
+[Unit]
+Description=Mira Finance verified inbound email polling
+After=network-online.target
+
+[Service]
+Type=oneshot
+UMask=0077
+WorkingDirectory=/root/.workspaces/mira-finance
+ExecStart=/usr/bin/node scripts/customer-inbound.mjs
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=/root/.workspaces/mira-finance

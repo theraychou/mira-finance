@@ -1,0 +1,7 @@
+{
+  "name": "mira-finance-inbound",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "peerDependencies": { "openclaw": ">=2026.7.1-2" }
+}

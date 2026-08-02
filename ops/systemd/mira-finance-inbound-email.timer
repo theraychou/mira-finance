@@ -1,0 +1,11 @@
+[Unit]
+Description=Poll Mira Finance inbound email every five minutes
+
+[Timer]
+OnBootSec=5min
+OnUnitActiveSec=5min
+Persistent=true
+Unit=mira-finance-inbound-email.service
+
+[Install]
+WantedBy=timers.target

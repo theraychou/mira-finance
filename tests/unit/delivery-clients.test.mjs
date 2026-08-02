@@ -24,3 +24,16 @@ test('WhatsApp client sends one explicit target and one local attachment without
   assert.ok(invocation.args.includes('--target=+15555550123'));
   assert.ok(invocation.args.includes('--media=C:/test.pdf'));
 });
+
+test('reply clients preserve provider threading without enabling unrelated command groups', async () => {
+  let gmailInvocation; let whatsAppInvocation;
+  const gmail = createGogGmailClient({ account: 'finance@example.test', client: 'mira-gmail-inbound', from: 'finance@example.test',
+    runner: async (command, args) => { gmailInvocation = { command, args }; return { stdout: JSON.stringify({ id: 'TEST-REPLY' }) }; } });
+  await gmail.reply({ to: 'billing@example.test', subject: 'TEST / NOT VALID', body: 'TEST / NOT VALID', inReplyTo: 'TEST-INBOUND' });
+  assert.ok(gmailInvocation.args.includes('--reply-to-message-id=TEST-INBOUND'));
+  assert.ok(gmailInvocation.args.includes('--enable-commands=gmail'));
+  const whatsapp = createOpenClawWhatsAppClient({ runner: async (command, args) => { whatsAppInvocation = { command, args }; return { stdout: JSON.stringify({ messageId: 'TEST-REPLY' }) }; } });
+  await whatsapp.reply({ to: '+15555550123', body: 'TEST / NOT VALID' });
+  assert.ok(whatsAppInvocation.args.includes('--target=+15555550123'));
+  assert.ok(!whatsAppInvocation.args.some((value) => value.startsWith('--media=')));
+});

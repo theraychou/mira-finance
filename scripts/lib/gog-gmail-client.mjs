@@ -62,6 +62,26 @@ export function createGogGmailClient({
         if (error instanceof GmailDeliveryError) throw error;
         throw classify(error);
       }
+    },
+    async reply({ to, subject, body, inReplyTo, threadId }) {
+      const replySubject = /^re:/i.test(subject ?? '') ? subject : `Re: ${subject || 'Your finance document'}`;
+      const argumentsList = [
+        `--account=${account}`, `--client=${client}`, '--enable-commands=gmail', '--no-input', '--json',
+        'gmail', 'send', `--to=${to}`, `--from=${from}`, `--subject=${replySubject}`, `--body=${body}`
+      ];
+      if (inReplyTo) argumentsList.push(`--reply-to-message-id=${inReplyTo}`);
+      else if (threadId) argumentsList.push(`--thread-id=${threadId}`);
+      if (replyTo) argumentsList.push(`--reply-to=${replyTo}`);
+      try {
+        const { stdout } = await runner(gogCommand, argumentsList, { timeout: timeoutMs, windowsHide: true, maxBuffer: 1024 * 1024 });
+        const result = JSON.parse(stdout);
+        const reference = result?.id ?? result?.messageId ?? result?.message_id ?? result?.message?.id;
+        if (typeof reference !== 'string' || !reference) throw new GmailDeliveryError('EMAIL_RESPONSE_INVALID');
+        return { providerReference: reference };
+      } catch (error) {
+        if (error instanceof GmailDeliveryError) throw error;
+        throw classify(error);
+      }
     }
   };
 }

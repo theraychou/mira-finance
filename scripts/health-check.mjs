@@ -6,6 +6,7 @@ import { checkDatabase } from './check-database.mjs';
 import { loadDriveConfiguration } from './lib/drive-configuration.mjs';
 import { loadWhatsAppRoutingConfiguration } from './lib/whatsapp-routing.mjs';
 import { loadCustomerDeliveryConfig } from './lib/customer-delivery-config.mjs';
+import { loadCustomerInboundConfig } from './lib/customer-inbound-config.mjs';
 import { assertDiskSpace } from './lib/runtime-safety.mjs';
 import { runValidation, repositoryRoot } from './validate-config.mjs';
 
@@ -115,7 +116,7 @@ export async function runHealthCheck({ root = repositoryRoot, env = process.env 
   let databaseStatus = 'NOT_CONFIGURED';
   if (databasePresent) {
     const databaseCheck = checkDatabase(path.join(root, 'data', 'finance.sqlite3'));
-    const schemaVersions = { F3: 1, F4: 2, F5: 3, F6: 4, F7: 5, F8: 6, F9: 6, F10: 6, F11: 6, F12: 7, F13: 8, F14: 9, F15: 10, F16: 10, F17A: 11 };
+    const schemaVersions = { F3: 1, F4: 2, F5: 3, F6: 4, F7: 5, F8: 6, F9: 6, F10: 6, F11: 6, F12: 7, F13: 8, F14: 9, F15: 10, F16: 10, F17A: 11, F17B: 12 };
     const requiredSchemaVersion = schemaVersions[foundation.project.phase] ?? 1;
     const databaseReady = databaseCheck.ok && databaseCheck.schemaVersion >= requiredSchemaVersion;
     databaseStatus = databaseReady ? 'CONFIGURED' : 'FAIL';
@@ -130,6 +131,13 @@ export async function runHealthCheck({ root = repositoryRoot, env = process.env 
     checks.push(check('operations:disk-space', 'PASS', 'production reserve available'));
   } catch {
     checks.push(check('operations:disk-space', 'FAIL', 'production reserve unavailable'));
+  }
+
+  try {
+    const inbound = await loadCustomerInboundConfig({ root });
+    checks.push(check('optional:customer-inbound', inbound.enabled ? 'CONFIGURED' : 'PREPARED', 'Phase F17B verified replies'));
+  } catch {
+    checks.push(check('optional:customer-inbound', 'NOT_CONFIGURED', 'Phase F17B private configuration pending'));
   }
   const alertCount = await countAlertRecords(root);
   checks.push(check('operations:failure-alerts', alertCount > 0 ? 'ATTENTION' : 'PASS', `${alertCount} redacted alert record(s)`));

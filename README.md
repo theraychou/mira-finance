@@ -4,9 +4,9 @@ This repository contains the isolated workspace for Mira, the future OpenClaw Fi
 
 ## Current phase
 
-Phase F17A - Controlled Customer Delivery (outbound only).
+Phase F17B - Verified Customer Reply Processing.
 
-Mira is registered as an isolated OpenClaw agent and the dedicated RC Finance group routes only to her. F17A adds confirmation-gated outbound delivery of immutable issued PDFs to active verified customer contacts. Email is the default; WhatsApp is explicit and requires recorded consent. The broad messaging tool remains denied, and inbound customer reply handling remains deferred to F17B.
+Mira is registered as an isolated OpenClaw agent and the dedicated RC Finance group routes only to her. F17A provides confirmation-gated outbound delivery. F17B adds deterministic replies from finance records for active verified customer contacts and escalates everything unknown or ambiguous to RC Finance. The broad messaging tool remains denied.
 
 ## Workspace
 
@@ -55,9 +55,11 @@ npm run health
 npm test
 ```
 
-The foundation health check exits successfully when the F17A configuration is healthy. The separate Drive health check validates live access to the approved folder without printing its identity or folder ID. WhatsApp routing remains configured only for RC Finance. Mira's chat tool surface adds only the optional prepare/confirm delivery tools while retaining the broad message denial.
+The foundation health check exits successfully when the F17B configuration is healthy. The separate Drive health check validates live access to the approved folder without printing its identity or folder ID. WhatsApp routing remains configured only for RC Finance. Mira's chat tool surface retains narrow confirmation tools while keeping the broad message denial.
 
 F17A delivery contacts live only in the private ledger. A delivery token binds one issued PDF hash, verified contact, channel, requester, and RC Finance context for 15 minutes. The PDF is re-hashed immediately before sending. Provider references are stored only as hashes, and resends require a reason and another confirmation. The ignored `config/customer-delivery.json` controls activation; OAuth material remains outside the repository.
+
+F17B inbound processing is controlled by ignored `config/customer-inbound.json`. Exact-document status questions may be answered from the ledger. Attachments, unsupported questions, ambiguous document references, and all requests to change finance state are acknowledged and escalated to RC Finance. Ray's exact response requires a short-lived confirmation before delivery. Gmail polling uses read and send only, does not alter mailbox labels, and deduplicates provider message IDs in SQLite.
 
 The private runtime ledger is `data/finance.sqlite3`. It is excluded from Git. The F11 pilot uses the separate ignored ledger `data/pilots/f11-pilot.sqlite3`. Document numbers are allocated transactionally in the approved `YYMMDD1001-{CLIENT_INITIALS}` format using one collision-free daily sequence across document types.
 

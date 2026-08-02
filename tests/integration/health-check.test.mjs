@@ -2,22 +2,23 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { runHealthCheck } from '../../scripts/health-check.mjs';
 
-test('health check passes with F17A hardening and WhatsApp routing configured', async () => {
+test('health check passes with F17B hardening and WhatsApp routing configured', async () => {
   const report = await runHealthCheck({ env: {
     MIRA_WHATSAPP_GROUP_ID: '120000000000000000@g.us',
     MIRA_WHATSAPP_AUTHORIZED_SENDER: '+601100000000'
   } });
   assert.equal(report.healthy, true);
-  assert.equal(report.phase, 'F17A');
+  assert.equal(report.phase, 'F17B');
   assert.equal(report.checks.find((item) => item.name === 'operations:disk-space').status, 'PASS');
   assert.equal(report.checks.find((item) => item.name === 'operations:failure-alerts').status, 'PASS');
   const optional = report.checks.filter((item) => item.name.startsWith('optional:'));
-  assert.equal(optional.length, 5);
+  assert.equal(optional.length, 6);
   assert.equal(optional.find((item) => item.name === 'optional:document-templates').status, 'CONFIGURED');
   assert.notEqual(optional.find((item) => item.name === 'optional:database').status, 'FAIL');
   assert.equal(optional.find((item) => item.name === 'optional:google-drive').status, 'CONFIGURED');
   assert.equal(optional.find((item) => item.name === 'optional:whatsapp').status, 'CONFIGURED');
   assert.notEqual(optional.find((item) => item.name === 'optional:customer-delivery').status, 'FAIL');
+  assert.notEqual(optional.find((item) => item.name === 'optional:customer-inbound').status, 'FAIL');
 });
 
 test('health check does not print or require credential values', async () => {

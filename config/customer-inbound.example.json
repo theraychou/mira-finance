@@ -1,0 +1,20 @@
+{
+  "$schema": "../schemas/customer-inbound-config.schema.json",
+  "schemaVersion": 1,
+  "enabled": false,
+  "autoReply": false,
+  "confirmationTtlMinutes": 15,
+  "maxMessageCharacters": 8000,
+  "email": {
+    "enabled": false,
+    "account": "finance@example.test",
+    "client": "mira-gmail-inbound",
+    "from": "finance@example.test",
+    "searchQuery": "in:inbox -from:me newer_than:30d",
+    "maximumResults": 20
+  },
+  "whatsApp": {
+    "enabled": false,
+    "account": null
+  }
+}

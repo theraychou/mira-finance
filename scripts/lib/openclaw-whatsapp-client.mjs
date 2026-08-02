@@ -25,24 +25,26 @@ export function createOpenClawWhatsAppClient({
   timeoutMs = 120000,
   runner = execFileAsync
 } = {}) {
+  async function invoke({ to, body, attachmentPath = null }) {
+    const argumentsList = ['message', 'send', '--channel=whatsapp', `--target=${to}`, `--message=${body}`, '--json'];
+    if (attachmentPath) argumentsList.splice(argumentsList.length - 1, 0, `--media=${attachmentPath}`);
+    if (account) argumentsList.push(`--account=${account}`);
+    try {
+      const { stdout } = await runner(openClawCommand, argumentsList, { timeout: timeoutMs, windowsHide: true, maxBuffer: 1024 * 1024 });
+      const result = JSON.parse(stdout);
+      const reference = result?.messageId ?? result?.message_id ?? result?.id ?? result?.result?.messageId;
+      if (typeof reference !== 'string' || reference.length === 0) throw new WhatsAppDeliveryError('WHATSAPP_RESPONSE_INVALID');
+      return { providerReference: reference };
+    } catch (error) {
+      if (error instanceof WhatsAppDeliveryError) throw error;
+      throw classify(error);
+    }
+  }
   return {
     async send({ to, body, attachmentPath }) {
-      const argumentsList = ['message', 'send', '--channel=whatsapp', `--target=${to}`, `--message=${body}`, `--media=${attachmentPath}`, '--json'];
-      if (account) argumentsList.push(`--account=${account}`);
-      try {
-        const { stdout } = await runner(openClawCommand, argumentsList, {
-          timeout: timeoutMs,
-          windowsHide: true,
-          maxBuffer: 1024 * 1024
-        });
-        const result = JSON.parse(stdout);
-        const reference = result?.messageId ?? result?.message_id ?? result?.id ?? result?.result?.messageId;
-        if (typeof reference !== 'string' || reference.length === 0) throw new WhatsAppDeliveryError('WHATSAPP_RESPONSE_INVALID');
-        return { providerReference: reference };
-      } catch (error) {
-        if (error instanceof WhatsAppDeliveryError) throw error;
-        throw classify(error);
-      }
-    }
+      return invoke({ to, body, attachmentPath });
+    },
+    async reply({ to, body }) { return invoke({ to, body }); },
+    async notify({ to, body }) { return invoke({ to, body }); }
   };
 }

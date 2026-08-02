@@ -1,0 +1,14 @@
+{
+  "id": "mira-finance-inbound",
+  "name": "Mira Finance Customer Reply Processing",
+  "description": "Deterministic verified-customer reply handling and RC Finance escalation.",
+  "version": "0.1.0",
+  "entry": "./index.js",
+  "contracts": {"tools": ["mira_finance_prepare_customer_reply", "mira_finance_confirm_customer_reply"]},
+  "toolMetadata": {
+    "mira_finance_prepare_customer_reply": {"optional": true},
+    "mira_finance_confirm_customer_reply": {"optional": true}
+  },
+  "activation": {"onStartup": true},
+  "configSchema": {"type": "object", "additionalProperties": false}
+}

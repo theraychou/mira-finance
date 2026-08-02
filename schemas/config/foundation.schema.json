@@ -29,7 +29,7 @@
       "properties": {
         "agentId": {"type": "string", "const": "mira-finance"},
         "displayName": {"type": "string", "const": "Mira"},
-        "phase": {"type": "string", "const": "F17A"}
+        "phase": {"type": "string", "const": "F17B"}
       }
     },
     "workspace": {
@@ -50,13 +50,14 @@
     "optionalIntegrations": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["database", "documentTemplates", "googleDrive", "whatsApp", "customerDelivery"],
+      "required": ["database", "documentTemplates", "googleDrive", "whatsApp", "customerDelivery", "customerInbound"],
       "properties": {
         "database": {"type": "string", "const": "configured"},
         "documentTemplates": {"type": "string", "const": "configured"},
         "googleDrive": {"type": "string", "const": "configured"},
         "whatsApp": {"type": "string", "const": "configured"},
-        "customerDelivery": {"type": "string", "const": "prepared"}
+        "customerDelivery": {"type": "string", "const": "prepared"},
+        "customerInbound": {"type": "string", "const": "prepared"}
       }
     },
     "operations": {"$ref": "operations.schema.json"}

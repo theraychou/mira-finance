@@ -4,13 +4,13 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { repositoryRoot } from '../../scripts/validate-config.mjs';
 
-test('F17A policy isolates Mira and exposes only narrow customer-delivery tools', async () => {
+test('F17B policy isolates Mira and exposes only narrow delivery and escalation tools', async () => {
   const policy = JSON.parse(await readFile(path.join(repositoryRoot, 'config/openclaw-agent-policy.json'), 'utf8'));
   assert.equal(policy.agentId, 'mira-finance');
   assert.equal(policy.displayName, 'Mira');
   assert.equal(policy.workspace, '/root/.workspaces/mira-finance');
   assert.deepEqual(policy.skills, ['mira-finance']);
-  assert.deepEqual(policy.tools.alsoAllow, ['read', 'mira_finance_health', 'mira_finance_prepare_delivery', 'mira_finance_confirm_delivery']);
+  assert.deepEqual(policy.tools.alsoAllow, ['read', 'mira_finance_health', 'mira_finance_prepare_delivery', 'mira_finance_confirm_delivery', 'mira_finance_prepare_customer_reply', 'mira_finance_confirm_customer_reply']);
   assert.equal(policy.tools.fs.workspaceOnly, true);
   assert.equal(policy.tools.elevated.enabled, false);
   assert.equal(policy.tools.message.allowCrossContextSend, false);
@@ -20,6 +20,14 @@ test('F17A policy isolates Mira and exposes only narrow customer-delivery tools'
   for (const denied of ['message', 'sessions_list', 'sessions_history', 'sessions_send', 'sessions_spawn', 'web_search', 'web_fetch']) {
     assert.ok(policy.tools.deny.includes(denied));
   }
+});
+
+test('customer inbound plugin is deterministic and confirmation-gated', async () => {
+  const manifest = JSON.parse(await readFile(path.join(repositoryRoot, 'extensions/mira-finance-inbound/openclaw.plugin.json'), 'utf8'));
+  const source = await readFile(path.join(repositoryRoot, 'extensions/mira-finance-inbound/index.js'), 'utf8');
+  assert.deepEqual(manifest.contracts.tools, ['mira_finance_prepare_customer_reply', 'mira_finance_confirm_customer_reply']);
+  assert.match(source, /before_dispatch/); assert.match(source, /message_sent/); assert.match(source, /loadCustomerInboundConfig/);
+  assert.doesNotMatch(source, /\/root\/clawd|client_secret|refresh_token|private_key/i);
 });
 
 test('customer delivery plugin is confirmation-gated while broad messaging remains denied', async () => {
@@ -77,6 +85,7 @@ test('finance health plugin declares one no-argument tool', async () => {
   assert.match(source, /additionalProperties: false/);
   assert.match(source, /name === 'optional:whatsapp'/);
   assert.match(source, /operations:failure-alerts/);
+  assert.match(source, /optional:customer-inbound/);
   assert.doesNotMatch(source, /whatsApp:\s*'NOT_CONFIGURED'/);
   assert.doesNotMatch(source, /child_process|execFile|spawn|client_secret|refresh_token|private_key/i);
 });

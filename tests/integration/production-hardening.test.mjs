@@ -34,7 +34,7 @@ test('backup restore drill recreates an equivalent ledger in an isolated locatio
     const restored = path.join(value.root, 'data', 'restore-drills', 'TEST-NOT-VALID.sqlite3');
     await backupDatabase({ sourcePath: value.databasePath, destinationPath: backup });
     const result = await runRestoreDrill({ backupPath: backup, targetPath: restored });
-    assert.equal(result.schemaVersion, 11); assert.equal(result.tableCount, 63); assert.equal((await stat(restored)).isFile(), true);
+    assert.equal(result.schemaVersion, 12); assert.equal(result.tableCount, 66); assert.equal((await stat(restored)).isFile(), true);
   } finally { await cleanup(value); }
 });
 
