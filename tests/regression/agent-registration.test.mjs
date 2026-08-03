@@ -65,6 +65,16 @@ test('F16 maintenance timer is private, bounded, and cannot restart OpenClaw', a
   assert.match(timer, /Asia\/Kuala_Lumpur/); assert.match(timer, /Persistent=true/);
 });
 
+test('F17B email timer isolates Mira from the shared Google token store', async () => {
+  const service = await readFile(path.join(repositoryRoot, 'ops/systemd/mira-finance-inbound-email.service'), 'utf8');
+  const timer = await readFile(path.join(repositoryRoot, 'ops/systemd/mira-finance-inbound-email.timer'), 'utf8');
+  assert.match(service, /Environment=XDG_CONFIG_HOME=\/root\/\.config\/mira-finance-gog/);
+  assert.match(service, /InaccessiblePaths=\/root\/\.config\/gogcli/);
+  assert.match(service, /ReadWritePaths=\/root\/\.workspaces\/mira-finance \/root\/\.config\/mira-finance-gog/);
+  assert.match(service, /UMask=0077/);
+  assert.match(timer, /OnUnitActiveSec=5min/);
+});
+
 test('correction CLI is fail-closed and is not exposed as a WhatsApp tool', async () => {
   const executable = await readFile(path.join(repositoryRoot, 'scripts/corrections.mjs'), 'utf8');
   const manifest = JSON.parse(await readFile(path.join(repositoryRoot, 'extensions/mira-finance-health/openclaw.plugin.json'), 'utf8'));

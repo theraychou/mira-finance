@@ -6,8 +6,11 @@ After=network-online.target
 Type=oneshot
 UMask=0077
 WorkingDirectory=/root/.workspaces/mira-finance
+Environment=XDG_CONFIG_HOME=/root/.config/mira-finance-gog
+Environment=PATH=/usr/local/bin:/usr/bin:/bin
 ExecStart=/usr/bin/node scripts/customer-inbound.mjs
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
-ReadWritePaths=/root/.workspaces/mira-finance
+InaccessiblePaths=/root/.config/gogcli
+ReadWritePaths=/root/.workspaces/mira-finance /root/.config/mira-finance-gog
