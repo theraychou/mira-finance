@@ -73,7 +73,8 @@ test('F17B email timer isolates Mira from the shared Google token store', async 
   assert.match(service, /InaccessiblePaths=\/root\/\.config\/gogcli/);
   assert.match(service, /ReadWritePaths=\/root\/\.workspaces\/mira-finance \/root\/\.config\/mira-finance-gog/);
   assert.match(service, /UMask=0077/);
-  assert.match(timer, /OnUnitActiveSec=5min/);
+  assert.match(timer, /OnCalendar=\*-\*-\* \*:00\/5:00 Asia\/Kuala_Lumpur/);
+  assert.match(timer, /Persistent=true/);
 });
 
 test('correction CLI is fail-closed and is not exposed as a WhatsApp tool', async () => {

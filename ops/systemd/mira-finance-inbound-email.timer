@@ -2,8 +2,7 @@
 Description=Poll Mira Finance inbound email every five minutes
 
 [Timer]
-OnBootSec=5min
-OnUnitActiveSec=5min
+OnCalendar=*-*-* *:00/5:00 Asia/Kuala_Lumpur
 Persistent=true
 Unit=mira-finance-inbound-email.service
 
