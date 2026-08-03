@@ -69,6 +69,7 @@ test('F17B email timer isolates Mira from the shared Google token store', async 
   const service = await readFile(path.join(repositoryRoot, 'ops/systemd/mira-finance-inbound-email.service'), 'utf8');
   const timer = await readFile(path.join(repositoryRoot, 'ops/systemd/mira-finance-inbound-email.timer'), 'utf8');
   assert.match(service, /Environment=XDG_CONFIG_HOME=\/root\/\.config\/mira-finance-gog/);
+  assert.match(service, /EnvironmentFile=\/root\/\.config\/mira-finance-gog-secrets\/keyring\.env/);
   assert.match(service, /InaccessiblePaths=\/root\/\.config\/gogcli/);
   assert.match(service, /ReadWritePaths=\/root\/\.workspaces\/mira-finance \/root\/\.config\/mira-finance-gog/);
   assert.match(service, /UMask=0077/);

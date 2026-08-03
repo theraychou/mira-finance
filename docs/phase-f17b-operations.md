@@ -2,7 +2,7 @@
 
 Keep `config/customer-inbound.json` private and disabled until the dedicated mailbox authorization and verified-contact pilot are ready.
 
-The Gmail profile needs only message read access and send access. The polling query is fixed in private configuration, results are bounded, and processed provider IDs are deduplicated in SQLite. No Gmail labels are changed. The systemd poller uses an isolated `XDG_CONFIG_HOME` containing only Mira's inbound Gmail profile and blocks access to the shared Google CLI store.
+The Gmail profile needs only message read access and send access. The polling query is fixed in private configuration, results are bounded, and processed provider IDs are deduplicated in SQLite. No Gmail labels are changed. The systemd poller uses an isolated `XDG_CONFIG_HOME` containing only Mira's inbound Gmail profile, an owner-only keyring environment file outside the writable token directory, and blocks access to the shared Google CLI store.
 
 Direct WhatsApp replies are handled only when the sender exactly matches an active verified WhatsApp delivery contact with recorded consent. Existing bindings remain unchanged. Known exact-document status questions receive deterministic ledger answers. All other questions receive a neutral acknowledgement and an RC Finance escalation token.
 

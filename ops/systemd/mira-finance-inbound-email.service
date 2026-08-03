@@ -8,6 +8,7 @@ UMask=0077
 WorkingDirectory=/root/.workspaces/mira-finance
 Environment=XDG_CONFIG_HOME=/root/.config/mira-finance-gog
 Environment=PATH=/usr/local/bin:/usr/bin:/bin
+EnvironmentFile=/root/.config/mira-finance-gog-secrets/keyring.env
 ExecStart=/usr/bin/node scripts/customer-inbound.mjs
 NoNewPrivileges=true
 PrivateTmp=true
