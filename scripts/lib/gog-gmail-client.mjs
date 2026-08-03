@@ -31,6 +31,7 @@ export function createGogGmailClient({
   for (const [name, value] of Object.entries({ account, client, from })) {
     if (typeof value !== 'string' || !value.trim()) throw new TypeError(`${name} is required.`);
   }
+  const fromArgument = account.trim().toLowerCase() === from.trim().toLowerCase() ? [] : [`--from=${from}`];
   return {
     async send({ to, subject, body, attachmentPath }) {
       const argumentsList = [
@@ -42,7 +43,7 @@ export function createGogGmailClient({
         'gmail',
         'send',
         `--to=${to}`,
-        `--from=${from}`,
+        ...fromArgument,
         `--subject=${subject}`,
         `--body=${body}`,
         `--attach=${attachmentPath}`
@@ -67,7 +68,7 @@ export function createGogGmailClient({
       const replySubject = /^re:/i.test(subject ?? '') ? subject : `Re: ${subject || 'Your finance document'}`;
       const argumentsList = [
         `--account=${account}`, `--client=${client}`, '--enable-commands=gmail', '--no-input', '--json',
-        'gmail', 'send', `--to=${to}`, `--from=${from}`, `--subject=${replySubject}`, `--body=${body}`
+        'gmail', 'send', `--to=${to}`, ...fromArgument, `--subject=${replySubject}`, `--body=${body}`
       ];
       if (inReplyTo) argumentsList.push(`--reply-to-message-id=${inReplyTo}`);
       else if (threadId) argumentsList.push(`--thread-id=${threadId}`);

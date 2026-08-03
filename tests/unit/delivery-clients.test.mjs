@@ -12,7 +12,16 @@ test('Gmail client uses only the Gmail command group and non-interactive attachm
   assert.ok(invocation.args.includes('--enable-commands=gmail'));
   assert.ok(invocation.args.includes('--no-input'));
   assert.ok(invocation.args.includes('--attach=C:/test.pdf'));
+  assert.ok(!invocation.args.some((value) => value.startsWith('--from=')));
   assert.ok(!invocation.args.some((value) => value.includes('gmail.modify') || value.includes('drive')));
+});
+
+test('Gmail client uses an explicit From flag only for a distinct send-as alias', async () => {
+  let invocation;
+  const client = createGogGmailClient({ account: 'finance@example.test', client: 'mira-gmail-send', from: 'billing@example.test',
+    runner: async (command, args) => { invocation = { command, args }; return { stdout: JSON.stringify({ id: 'TEST-ID' }) }; } });
+  await client.send({ to: 'client@example.test', subject: 'TEST / NOT VALID', body: 'TEST / NOT VALID', attachmentPath: 'C:/test.pdf' });
+  assert.ok(invocation.args.includes('--from=billing@example.test'));
 });
 
 test('WhatsApp client sends one explicit target and one local attachment without shell composition', async () => {
@@ -32,6 +41,7 @@ test('reply clients preserve provider threading without enabling unrelated comma
   await gmail.reply({ to: 'billing@example.test', subject: 'TEST / NOT VALID', body: 'TEST / NOT VALID', inReplyTo: 'TEST-INBOUND' });
   assert.ok(gmailInvocation.args.includes('--reply-to-message-id=TEST-INBOUND'));
   assert.ok(gmailInvocation.args.includes('--enable-commands=gmail'));
+  assert.ok(!gmailInvocation.args.some((value) => value.startsWith('--from=')));
   const whatsapp = createOpenClawWhatsAppClient({ runner: async (command, args) => { whatsAppInvocation = { command, args }; return { stdout: JSON.stringify({ messageId: 'TEST-REPLY' }) }; } });
   await whatsapp.reply({ to: '+15555550123', body: 'TEST / NOT VALID' });
   assert.ok(whatsAppInvocation.args.includes('--target=+15555550123'));
