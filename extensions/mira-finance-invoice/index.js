@@ -9,21 +9,23 @@ const result = (value) => ({ content: [{ type: 'text', text: JSON.stringify(valu
 const safeFailure = (error) => /^[A-Z][A-Z0-9_]{2,95}$/.test(error?.code ?? error?.message ?? '')
   ? (error.code ?? error.message) : 'INVOICE_OPERATION_FAILED';
 
-async function raySource(ctx, executionId) {
-  const routing = await loadWhatsAppRoutingConfiguration();
-  const channel = ctx.deliveryContext?.channel ?? ctx.messageChannel;
-  const group = ctx.deliveryContext?.to;
-  const sender = ctx.requesterSenderId;
-  if (ctx.agentId !== 'mira-finance' || channel !== 'whatsapp' || group !== routing.group.id || sender !== routing.authorizedSenders[0].e164) {
-    throw Object.assign(new Error('INVOICE_SOURCE_NOT_AUTHORIZED'), { code: 'INVOICE_SOURCE_NOT_AUTHORIZED' });
-  }
-  const session = ctx.sessionId ?? 'no-session';
-  return {
-    requestingUser: `whatsapp:${fingerprint('sender', sender)}`,
-    sourceChannel: 'whatsapp',
-    sourceChat: `group:${fingerprint('group', group)}`,
-    sourceMessageReference: `tool:${fingerprint('invoice', `${session}:${executionId}`)}`
-  };
+function raySource(ctx, executionId) {
+  return loadWhatsAppRoutingConfiguration().then((routing) => {
+    const channel = ctx.deliveryContext?.channel ?? ctx.messageChannel;
+    const group = ctx.deliveryContext?.to;
+    const sender = ctx.requesterSenderId;
+    if (ctx.agentId !== 'mira-finance' || channel !== 'whatsapp' || group !== routing.group.id || sender !== routing.authorizedSenders[0].e164) {
+      throw Object.assign(new Error('INVOICE_SOURCE_NOT_AUTHORIZED'), { code: 'INVOICE_SOURCE_NOT_AUTHORIZED' });
+    }
+    const session = ctx.sessionId ?? 'no-session';
+    const requestKey = [session, executionId].join(':');
+    return {
+      requestingUser: `whatsapp:${fingerprint('sender', sender)}`,
+      sourceChannel: 'whatsapp',
+      sourceChat: `group:${fingerprint('group', group)}`,
+      sourceMessageReference: `tool:${fingerprint('invoice', requestKey)}`
+    };
+  });
 }
 
 export default definePluginEntry({
@@ -63,11 +65,10 @@ export default definePluginEntry({
             }
           }
         },
-        async execute(id, params) {
-          try {
-            const trusted = await raySource(ctx, id);
-            return result(prepareWhatsAppInvoice({ databasePath: defaultDatabasePath, input: params, ...trusted }));
-          } catch (error) { return result({ status: 'FAIL', code: safeFailure(error) }); }
+        execute(id, params) {
+          return raySource(ctx, id)
+            .then((trusted) => result(prepareWhatsAppInvoice({ databasePath: defaultDatabasePath, input: params, ...trusted })))
+            .catch((error) => result({ status: 'FAIL', code: safeFailure(error) }));
         }
       };
       const confirm = {
@@ -77,12 +78,12 @@ export default definePluginEntry({
           type: 'object', additionalProperties: false, required: ['token'],
           properties: { token: { type: 'string', pattern: '^ID-[A-Z2-9]{10}$' } }
         },
-        async execute(id, params) {
-          try {
-            const trusted = await raySource(ctx, id);
-            return result(await confirmWhatsAppInvoice({ databasePath: defaultDatabasePath, token: params.token,
-              confirmingUser: trusted.requestingUser, sourceChannel: trusted.sourceChannel, sourceChat: trusted.sourceChat }));
-          } catch (error) { return result({ status: 'FAIL', code: safeFailure(error) }); }
+        execute(id, params) {
+          return raySource(ctx, id)
+            .then((trusted) => confirmWhatsAppInvoice({ databasePath: defaultDatabasePath, token: params.token,
+              confirmingUser: trusted.requestingUser, sourceChannel: trusted.sourceChannel, sourceChat: trusted.sourceChat }))
+            .then(result)
+            .catch((error) => result({ status: 'FAIL', code: safeFailure(error) }));
         }
       };
       return [prepare, confirm];
