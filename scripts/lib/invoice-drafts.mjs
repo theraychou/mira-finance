@@ -12,6 +12,11 @@ function text(value, name) {
   return value.trim();
 }
 function optional(value) { return typeof value === 'string' && value.trim() ? value.trim() : null; }
+function initials(value) {
+  const normalized = optional(value)?.toUpperCase() ?? null;
+  if (normalized && !/^[A-Z0-9]{1,8}$/.test(normalized)) throw new TypeError('client_initials must be 1-8 uppercase letters or digits.');
+  return normalized;
+}
 function hash(value) { return createHash('sha256').update(canonicalJson(value)).digest('hex'); }
 function instant(value, name) {
   const date = new Date(value);
@@ -46,6 +51,7 @@ function normalize(input) {
     purchaseOrderNumber: optional(input.purchase_order_number),
     paymentTerms: optional(input.payment_terms),
     notes: optional(input.notes),
+    clientInitials: initials(input.client_initials),
     sourceChannel: optional(input.source_channel),
     sourceMessageReference: optional(input.source_message_reference),
     quotationId: Number.isSafeInteger(input.quotation_id) ? input.quotation_id : null,
@@ -98,7 +104,7 @@ function resolve(database, input) {
     bankProfileId: bank?.id ?? null, issueDate: value.issueDate, dueDate,
     paymentTermsDays: value.paymentTermsDays, paymentTerms: value.paymentTerms,
     serviceDate: value.serviceDate, purchaseOrderNumber: value.purchaseOrderNumber,
-    notes: value.notes, sourceChannel: value.sourceChannel,
+    notes: value.notes, clientInitials: value.clientInitials, sourceChannel: value.sourceChannel,
     sourceMessageReference: value.sourceMessageReference,
     lineItems: value.lines.map((line, index) => ({
       sequence: index + 1, description: line.description, quantity: calculations.lines[index].display,

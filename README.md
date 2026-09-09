@@ -4,9 +4,9 @@ This repository contains the isolated workspace for Mira, the future OpenClaw Fi
 
 ## Current phase
 
-Phase F17B - Verified Customer Reply Processing.
+Phase F18 - WhatsApp Invoice Preparation and Issuance.
 
-Mira is registered as an isolated OpenClaw agent and the dedicated RC Finance group routes only to her. F17A provides confirmation-gated outbound delivery. F17B adds deterministic replies from finance records for active verified customer contacts and escalates everything unknown or ambiguous to RC Finance. The broad messaging tool remains denied.
+Mira is registered as an isolated OpenClaw agent and the dedicated RC Finance group routes only to her. F18 exposes narrow standalone invoice preparation and confirmation tools only to Ray in RC Finance. Exact customers, approved templates and bank profiles, dates, no-tax treatment, numbering initials, and integer minor-unit totals are bound into the draft before a one-use issuance token is created. F17A customer delivery and F17B verified-contact replies remain separately confirmation-gated. Broad messaging and execution tools remain denied.
 
 ## Workspace
 
@@ -55,7 +55,9 @@ npm run health
 npm test
 ```
 
-The foundation health check exits successfully when the F17B configuration is healthy. The separate Drive health check validates live access to the approved folder without printing its identity or folder ID. WhatsApp routing remains configured only for RC Finance. Mira's chat tool surface retains narrow confirmation tools while keeping the broad message denial.
+The foundation health check exits successfully when the F18 configuration is healthy. The separate Drive health check validates live access to the approved folder without printing its identity or folder ID. WhatsApp routing remains configured only for RC Finance. Mira's chat tool surface retains narrow confirmation tools while keeping broad messaging and execution denied.
+
+F18 standalone invoice preparation accepts exact structured facts from Ray, converts decimal price strings to integer minor units, and calculates totals and due dates deterministically. A draft receives no official number. Only the exact bound token can issue the immutable DOCX/PDF. Issuance does not send the document to a customer; delivery requires the separate F17A preview and confirmation flow.
 
 F17A delivery contacts live only in the private ledger. A delivery token binds one issued PDF hash, verified contact, channel, requester, and RC Finance context for 15 minutes. The PDF is re-hashed immediately before sending. Provider references are stored only as hashes, and resends require a reason and another confirmation. The ignored `config/customer-delivery.json` controls activation; OAuth material remains outside the repository.
 

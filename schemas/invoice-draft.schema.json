@@ -15,6 +15,7 @@
     "purchase_order_number": {"type": ["string", "null"]},
     "payment_terms": {"type": "string", "minLength": 1},
     "notes": {"type": ["string", "null"]},
+    "client_initials": {"type": ["string", "null"], "pattern": "^[A-Z0-9]{1,8}$"},
     "source_channel": {"type": ["string", "null"]},
     "source_message_reference": {"type": ["string", "null"]},
     "line_items": {"type": "array", "minItems": 1, "maxItems": 7, "items": {"type": "object"}},

@@ -4,13 +4,13 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { repositoryRoot } from '../../scripts/validate-config.mjs';
 
-test('F17B policy isolates Mira and exposes only narrow delivery and escalation tools', async () => {
+test('F18 policy isolates Mira and exposes only narrow invoice, delivery, and escalation tools', async () => {
   const policy = JSON.parse(await readFile(path.join(repositoryRoot, 'config/openclaw-agent-policy.json'), 'utf8'));
   assert.equal(policy.agentId, 'mira-finance');
   assert.equal(policy.displayName, 'Mira');
   assert.equal(policy.workspace, '/root/.workspaces/mira-finance');
   assert.deepEqual(policy.skills, ['mira-finance']);
-  assert.deepEqual(policy.tools.alsoAllow, ['read', 'mira_finance_health', 'mira_finance_prepare_delivery', 'mira_finance_confirm_delivery', 'mira_finance_prepare_customer_reply', 'mira_finance_confirm_customer_reply']);
+  assert.deepEqual(policy.tools.alsoAllow, ['read', 'mira_finance_health', 'mira_finance_prepare_delivery', 'mira_finance_confirm_delivery', 'mira_finance_prepare_customer_reply', 'mira_finance_confirm_customer_reply', 'mira_finance_prepare_invoice', 'mira_finance_confirm_invoice']);
   assert.equal(policy.tools.fs.workspaceOnly, true);
   assert.equal(policy.tools.elevated.enabled, false);
   assert.equal(policy.tools.message.allowCrossContextSend, false);
@@ -20,6 +20,20 @@ test('F17B policy isolates Mira and exposes only narrow delivery and escalation 
   for (const denied of ['message', 'sessions_list', 'sessions_history', 'sessions_send', 'sessions_spawn', 'web_search', 'web_fetch']) {
     assert.ok(policy.tools.deny.includes(denied));
   }
+});
+
+test('invoice plugin is standalone, deterministic, and confirmation-gated', async () => {
+  const manifest = JSON.parse(await readFile(path.join(repositoryRoot, 'extensions/mira-finance-invoice/openclaw.plugin.json'), 'utf8'));
+  const source = await readFile(path.join(repositoryRoot, 'extensions/mira-finance-invoice/index.js'), 'utf8');
+  const workflow = await readFile(path.join(repositoryRoot, 'scripts/lib/whatsapp-invoices.mjs'), 'utf8');
+  assert.deepEqual(manifest.contracts.tools, ['mira_finance_prepare_invoice', 'mira_finance_confirm_invoice']);
+  assert.equal(manifest.toolMetadata.mira_finance_prepare_invoice.optional, true);
+  assert.equal(manifest.toolMetadata.mira_finance_confirm_invoice.optional, true);
+  assert.match(source, /requesterSenderId/); assert.match(source, /routing\.group\.id/);
+  assert.match(source, /taxMode/); assert.match(source, /const: 'NONE'/);
+  assert.match(workflow, /parseMajorAmount/); assert.match(workflow, /createInvoiceConfirmationToken/);
+  assert.match(workflow, /issueConfirmedInvoice/); assert.match(workflow, /customerDeliveryRequiresSeparateConfirmation/);
+  assert.doesNotMatch(`${source}\n${workflow}`, /\/root\/clawd|client_secret|refresh_token|private_key/i);
 });
 
 test('customer inbound plugin is deterministic and confirmation-gated', async () => {

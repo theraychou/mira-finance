@@ -1,0 +1,17 @@
+{
+  "id": "mira-finance-invoice",
+  "name": "Mira Finance Invoice Workflow",
+  "description": "Prepares and confirms deterministic standalone invoices from RC Finance.",
+  "contracts": {
+    "tools": [
+      "mira_finance_prepare_invoice",
+      "mira_finance_confirm_invoice"
+    ]
+  },
+  "toolMetadata": {
+    "mira_finance_prepare_invoice": {"optional": true},
+    "mira_finance_confirm_invoice": {"optional": true}
+  },
+  "activation": {"onStartup": true},
+  "configSchema": {"type": "object", "additionalProperties": false}
+}

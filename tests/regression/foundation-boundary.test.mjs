@@ -13,7 +13,7 @@ async function exists(relative) {
   }
 }
 
-test('Phase F17B preserves approved integrations and adds verified customer inbound handling', async () => {
+test('Phase F18 preserves approved integrations and adds narrow WhatsApp invoice handling', async () => {
   const foundation = JSON.parse(await readFile(path.join(repositoryRoot, 'config/foundation.json'), 'utf8'));
   assert.deepEqual(foundation.features, {
     database: true,
@@ -27,11 +27,11 @@ test('Phase F17B preserves approved integrations and adds verified customer inbo
     customerDelivery: true,
     customerInbound: true
   });
-  assert.equal(foundation.project.phase, 'F17B');
+  assert.equal(foundation.project.phase, 'F18');
   assert.equal(foundation.operations.minimumFreeBytes, 268435456);
 });
 
-test('F17B retains all six templates and all twelve reversible database migrations', async () => {
+test('F18 retains all six templates and all twelve reversible database migrations', async () => {
   assert.equal(await exists('data/migrations/001_initial.up.sql'), true);
   assert.equal(await exists('data/migrations/001_initial.down.sql'), true);
   assert.equal(await exists('data/migrations/002_registries.up.sql'), true);
@@ -66,6 +66,8 @@ test('F17B retains all six templates and all twelve reversible database migratio
   assert.equal(await exists('docs/phase-f16-boundary.md'), true);
   assert.equal(await exists('docs/phase-f17a-boundary.md'), true);
   assert.equal(await exists('docs/phase-f17b-boundary.md'), true);
+  assert.equal(await exists('docs/phase-f18-boundary.md'), true);
+  assert.equal(await exists('docs/phase-f18-operations.md'), true);
   assert.equal(await exists('docs/operations-guide.md'), true);
   assert.equal(await exists('docs/recovery-guide.md'), true);
   assert.equal(await exists('docs/security-guide.md'), true);

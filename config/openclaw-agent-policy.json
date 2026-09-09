@@ -13,7 +13,9 @@
       "mira_finance_prepare_delivery",
       "mira_finance_confirm_delivery",
       "mira_finance_prepare_customer_reply",
-      "mira_finance_confirm_customer_reply"
+      "mira_finance_confirm_customer_reply",
+      "mira_finance_prepare_invoice",
+      "mira_finance_confirm_invoice"
     ],
     "deny": [
       "write",
