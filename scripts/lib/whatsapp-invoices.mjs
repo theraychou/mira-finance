@@ -3,7 +3,6 @@ import { lookupCustomer, assessCustomerReadiness } from './customer-registry.mjs
 import {
   calculateDueDate, createInvoiceConfirmationToken, createStandaloneInvoiceDraft, getInvoiceDraft
 } from './invoice-drafts.mjs';
-import { issueConfirmedInvoice } from './invoice-issuance.mjs';
 import { calculateLineItem } from './quotation-calculations.mjs';
 
 const CURRENCIES = new Set(['MYR', 'SGD', 'USD']);
@@ -177,23 +176,24 @@ function confirmationDraft(databasePath, token) {
   } finally { database.close(); }
 }
 
-export async function confirmWhatsAppInvoice({
+export function confirmWhatsAppInvoice({
   databasePath, token, confirmingUser, sourceChannel, sourceChat, root, outputRoot,
   testMode = false, documentRenderer, pdfConverter, pdfInspector, now = new Date().toISOString()
 }) {
   const reference = confirmationDraft(databasePath, required(token, 'token'));
   const clientInitials = reference.draft.snapshot.clientInitials;
   if (!clientInitials) fail('CLIENT_INITIALS_NOT_BOUND');
-  const issued = await issueConfirmedInvoice({ databasePath, token, confirmingUser, sourceChannel, sourceChat, clientInitials,
-    root, outputRoot, testMode, documentRenderer, pdfConverter, pdfInspector, now });
-  return {
-    status: 'ISSUED',
-    invoiceId: issued.invoice_id,
-    invoiceNumber: issued.invoice_number,
-    currency: reference.draft.snapshot.currency,
-    total: formatMinorAmount(reference.draft.snapshot.totals.totalMinor, reference.draft.snapshot.currency, reference.minorUnits),
-    dueDate: reference.draft.snapshot.dueDate,
-    pdfReady: Boolean(issued.pdf_relative_path),
-    customerDeliveryRequiresSeparateConfirmation: true
-  };
+  return import('./invoice-issuance.mjs')
+    .then(({ issueConfirmedInvoice }) => issueConfirmedInvoice({ databasePath, token, confirmingUser, sourceChannel, sourceChat, clientInitials,
+      root, outputRoot, testMode, documentRenderer, pdfConverter, pdfInspector, now }))
+    .then((issued) => ({
+      status: 'ISSUED',
+      invoiceId: issued.invoice_id,
+      invoiceNumber: issued.invoice_number,
+      currency: reference.draft.snapshot.currency,
+      total: formatMinorAmount(reference.draft.snapshot.totals.totalMinor, reference.draft.snapshot.currency, reference.minorUnits),
+      dueDate: reference.draft.snapshot.dueDate,
+      pdfReady: Boolean(issued.pdf_relative_path),
+      customerDeliveryRequiresSeparateConfirmation: true
+    }));
 }
