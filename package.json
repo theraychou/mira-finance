@@ -39,6 +39,7 @@
     "db:backup": "node scripts/backup-database.mjs",
     "registry": "node scripts/finance-registry.mjs",
     "customer-sheet": "node scripts/customer-sheet-mirror.mjs",
+    "customer-sheet:configure": "node scripts/configure-customer-sheet-mirror.mjs",
     "test": "node --test tests/unit/*.test.mjs tests/integration/*.test.mjs tests/regression/*.test.mjs"
   },
   "dependencies": {

@@ -23,9 +23,10 @@ async function fixture() {
 }
 async function cleanup(value) { const db = openDatabase(value.databasePath); db.exec('PRAGMA wal_checkpoint(TRUNCATE)'); db.close(); await rm(value.root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }); }
 
-function fakeClient({ failUpdate = false } = {}) {
+function fakeClient({ failUpdate = false, invalidFolder = false } = {}) {
   const calls = [];
   return { calls,
+    async getMetadata(id) { calls.push(['metadata', id]); return { id, mimeType: invalidFolder ? 'text/plain' : 'application/vnd.google-apps.folder' }; },
     async createSpreadsheet(input) { calls.push(['create', input]); return { id: 'TEST_SHEET_123456' }; },
     async moveToFolder(input) { calls.push(['move', input]); return { id: input.spreadsheetId, parents: [input.folderId] }; },
     async updateValues(input) { calls.push(['update', input]); if (failUpdate) throw Object.assign(new Error('SHEETS_TRANSIENT_FAILURE'), { code: 'SHEETS_TRANSIENT_FAILURE' }); },
@@ -62,6 +63,18 @@ test('mirror failure is redacted, recorded, and leaves the customer ledger intac
     const database = openDatabase(value.databasePath, { readOnly: true });
     assert.equal(database.prepare('SELECT COUNT(*) AS count FROM customers').get().count, 1);
     assert.equal(database.prepare('SELECT result FROM customer_sheet_sync_attempts').get().result, 'FAILED'); database.close();
+  } finally { await cleanup(value); }
+});
+
+test('mirror validates the destination folder before creating a spreadsheet', async () => {
+  const value = await fixture();
+  try {
+    const client = fakeClient({ invalidFolder: true });
+    const result = await syncCustomerSheetMirror({ databasePath: value.databasePath, configuration,
+      client, actor: 'TEST-OPERATOR', now: NOW });
+    assert.equal(result.status, 'FAILED');
+    assert.equal(result.errorCode, 'CUSTOMER_SHEET_FOLDER_INVALID');
+    assert.equal(client.calls.some(([name]) => name === 'create'), false);
   } finally { await cleanup(value); }
 });
 

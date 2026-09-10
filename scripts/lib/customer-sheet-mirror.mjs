@@ -102,6 +102,10 @@ export async function syncCustomerSheetMirror({ databasePath, configuration, cli
   try { current = state(database); } finally { database.close(); }
   let spreadsheetId = current?.spreadsheet_id ?? null;
   try {
+    const folder = await client.getMetadata(configuration.folderId);
+    if (folder?.mimeType !== 'application/vnd.google-apps.folder') {
+      throw Object.assign(new Error('CUSTOMER_SHEET_FOLDER_INVALID'), { code: 'CUSTOMER_SHEET_FOLDER_INVALID' });
+    }
     if (!spreadsheetId) {
       const created = await client.createSpreadsheet({ title: configuration.spreadsheetTitle, sheetName: configuration.sheetName });
       spreadsheetId = created.id;
