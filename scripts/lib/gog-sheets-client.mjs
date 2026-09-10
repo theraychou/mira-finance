@@ -50,7 +50,7 @@ export function createGogSheetsClient({ identity, client, gogCommand = 'gog', ti
       const { stdout } = await runner(gogCommand, [
         `--account=${identity}`,
         `--client=${client}`,
-        '--enable-commands=sheets,drive.get,drive.move',
+        '--enable-commands=sheets,drive',
         '--no-input',
         '--json',
         ...argumentsList
