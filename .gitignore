@@ -63,6 +63,7 @@ config/drive-folders.json
 config/whatsapp-routing.json
 config/customer-delivery.json
 config/customer-inbound.json
+config/customer-sheet-mirror.json
 templates/**/*.docx
 templates/**/*.dotx
 

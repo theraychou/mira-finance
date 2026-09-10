@@ -22,6 +22,7 @@
     "whatsapp:configure": "node scripts/configure-whatsapp-routing.mjs",
     "whatsapp:verify": "node scripts/verify-openclaw-f10.mjs",
     "whatsapp:invoice:inspect": "node scripts/inspect-openclaw-f18.mjs",
+    "whatsapp:customer:inspect": "node scripts/inspect-openclaw-f19.mjs",
     "pilot:f11": "node scripts/run-f11-pilot.mjs",
     "pilot:f11:verify": "node scripts/verify-f11-pilot.mjs",
     "claims": "node scripts/claim-receipt.mjs",
@@ -37,6 +38,7 @@
     "db:check": "node scripts/check-database.mjs",
     "db:backup": "node scripts/backup-database.mjs",
     "registry": "node scripts/finance-registry.mjs",
+    "customer-sheet": "node scripts/customer-sheet-mirror.mjs",
     "test": "node --test tests/unit/*.test.mjs tests/integration/*.test.mjs tests/regression/*.test.mjs"
   },
   "dependencies": {

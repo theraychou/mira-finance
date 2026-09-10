@@ -7,6 +7,7 @@ import { loadDriveConfiguration } from './lib/drive-configuration.mjs';
 import { loadWhatsAppRoutingConfiguration } from './lib/whatsapp-routing.mjs';
 import { loadCustomerDeliveryConfig } from './lib/customer-delivery-config.mjs';
 import { loadCustomerInboundConfig } from './lib/customer-inbound-config.mjs';
+import { loadCustomerSheetMirrorConfiguration } from './lib/customer-sheet-mirror-config.mjs';
 import { assertDiskSpace } from './lib/runtime-safety.mjs';
 import { runValidation, repositoryRoot } from './validate-config.mjs';
 
@@ -116,7 +117,7 @@ export async function runHealthCheck({ root = repositoryRoot, env = process.env 
   let databaseStatus = 'NOT_CONFIGURED';
   if (databasePresent) {
     const databaseCheck = checkDatabase(path.join(root, 'data', 'finance.sqlite3'));
-    const schemaVersions = { F3: 1, F4: 2, F5: 3, F6: 4, F7: 5, F8: 6, F9: 6, F10: 6, F11: 6, F12: 7, F13: 8, F14: 9, F15: 10, F16: 10, F17A: 11, F17B: 12, F18: 12 };
+    const schemaVersions = { F3: 1, F4: 2, F5: 3, F6: 4, F7: 5, F8: 6, F9: 6, F10: 6, F11: 6, F12: 7, F13: 8, F14: 9, F15: 10, F16: 10, F17A: 11, F17B: 12, F18: 12, F19: 13 };
     const requiredSchemaVersion = schemaVersions[foundation.project.phase] ?? 1;
     const databaseReady = databaseCheck.ok && databaseCheck.schemaVersion >= requiredSchemaVersion;
     databaseStatus = databaseReady ? 'CONFIGURED' : 'FAIL';
@@ -157,6 +158,17 @@ export async function runHealthCheck({ root = repositoryRoot, env = process.env 
     driveConfigured = Boolean(env.MIRA_GOOGLE_IDENTITY && env.MIRA_DRIVE_ROOT_FOLDER_ID);
   }
   checks.push(check('optional:google-drive', driveConfigured ? 'CONFIGURED' : 'NOT_CONFIGURED', 'Phase F8'));
+
+  if (!await exists(path.join(root, 'config', 'customer-sheet-mirror.json'))) {
+    checks.push(check('optional:customer-sheet-mirror', 'PREPARED', 'Phase F19 private configuration pending'));
+  } else {
+    try {
+      const mirror = await loadCustomerSheetMirrorConfiguration({ root });
+      checks.push(check('optional:customer-sheet-mirror', mirror.enabled ? 'CONFIGURED' : 'PREPARED', 'Phase F19 one-way mirror'));
+    } catch {
+      checks.push(check('optional:customer-sheet-mirror', 'FAIL', 'Phase F19 private configuration invalid'));
+    }
+  }
 
   let whatsAppConfigured = false;
   try {

@@ -15,7 +15,10 @@
       "mira_finance_prepare_customer_reply",
       "mira_finance_confirm_customer_reply",
       "mira_finance_prepare_invoice",
-      "mira_finance_confirm_invoice"
+      "mira_finance_confirm_invoice",
+      "mira_finance_list_customers",
+      "mira_finance_prepare_customer_change",
+      "mira_finance_confirm_customer_change"
     ],
     "deny": [
       "write",

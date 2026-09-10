@@ -13,7 +13,7 @@ async function exists(relative) {
   }
 }
 
-test('Phase F18 preserves approved integrations and adds narrow WhatsApp invoice handling', async () => {
+test('Phase F19 preserves approved integrations and adds narrow customer administration', async () => {
   const foundation = JSON.parse(await readFile(path.join(repositoryRoot, 'config/foundation.json'), 'utf8'));
   assert.deepEqual(foundation.features, {
     database: true,
@@ -25,13 +25,15 @@ test('Phase F18 preserves approved integrations and adds narrow WhatsApp invoice
     reports: true,
     corrections: true,
     customerDelivery: true,
-    customerInbound: true
+    customerInbound: true,
+    customerAdministration: true,
+    customerSheetMirror: true
   });
-  assert.equal(foundation.project.phase, 'F18');
+  assert.equal(foundation.project.phase, 'F19');
   assert.equal(foundation.operations.minimumFreeBytes, 268435456);
 });
 
-test('F18 retains all six templates and all twelve reversible database migrations', async () => {
+test('F19 retains all six templates and all thirteen reversible database migrations', async () => {
   assert.equal(await exists('data/migrations/001_initial.up.sql'), true);
   assert.equal(await exists('data/migrations/001_initial.down.sql'), true);
   assert.equal(await exists('data/migrations/002_registries.up.sql'), true);
@@ -56,6 +58,8 @@ test('F18 retains all six templates and all twelve reversible database migration
   assert.equal(await exists('data/migrations/011_customer_delivery.down.sql'), true);
   assert.equal(await exists('data/migrations/012_customer_inbound.up.sql'), true);
   assert.equal(await exists('data/migrations/012_customer_inbound.down.sql'), true);
+  assert.equal(await exists('data/migrations/013_customer_administration.up.sql'), true);
+  assert.equal(await exists('data/migrations/013_customer_administration.down.sql'), true);
   assert.equal(await exists('schemas/quotation-draft.schema.json'), true);
   assert.equal(await exists('schemas/invoice-draft.schema.json'), true);
   assert.equal(await exists('schemas/drive-folders.schema.json'), true);
@@ -68,6 +72,8 @@ test('F18 retains all six templates and all twelve reversible database migration
   assert.equal(await exists('docs/phase-f17b-boundary.md'), true);
   assert.equal(await exists('docs/phase-f18-boundary.md'), true);
   assert.equal(await exists('docs/phase-f18-operations.md'), true);
+  assert.equal(await exists('docs/phase-f19-boundary.md'), true);
+  assert.equal(await exists('docs/phase-f19-operations.md'), true);
   assert.equal(await exists('docs/operations-guide.md'), true);
   assert.equal(await exists('docs/recovery-guide.md'), true);
   assert.equal(await exists('docs/security-guide.md'), true);
@@ -92,6 +98,7 @@ test('source specification and sensitive runtime files are ignored', async () =>
     'config/whatsapp-routing.json',
     'config/customer-delivery.json',
     'config/customer-inbound.json',
+    'config/customer-sheet-mirror.json',
     'data/pilots/*',
     'data/claims/inbox/*',
     'data/claims/originals/*',

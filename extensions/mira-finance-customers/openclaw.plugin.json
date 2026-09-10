@@ -1,0 +1,19 @@
+{
+  "id": "mira-finance-customers",
+  "name": "Mira Finance Customer Administration",
+  "description": "Lists customers and performs confirmation-gated customer registry changes from RC Finance.",
+  "contracts": {
+    "tools": [
+      "mira_finance_list_customers",
+      "mira_finance_prepare_customer_change",
+      "mira_finance_confirm_customer_change"
+    ]
+  },
+  "toolMetadata": {
+    "mira_finance_list_customers": {"optional": true},
+    "mira_finance_prepare_customer_change": {"optional": true},
+    "mira_finance_confirm_customer_change": {"optional": true}
+  },
+  "activation": {"onStartup": true},
+  "configSchema": {"type": "object", "additionalProperties": false}
+}

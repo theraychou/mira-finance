@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "customer-sheet-mirror.schema.json",
+  "title": "Mira customer Google Sheets mirror",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$schema", "schemaVersion", "enabled", "identity", "client", "folderId", "spreadsheetTitle", "sheetName"],
+  "properties": {
+    "$schema": {"const": "../schemas/customer-sheet-mirror.schema.json"},
+    "schemaVersion": {"const": 1},
+    "enabled": {"type": "boolean"},
+    "identity": {"type": ["string", "null"], "format": "email"},
+    "client": {"type": ["string", "null"], "pattern": "^[a-z][a-z0-9-]{1,31}$"},
+    "folderId": {"type": ["string", "null"], "pattern": "^[A-Za-z0-9_-]{10,128}$"},
+    "spreadsheetTitle": {"type": "string", "minLength": 1, "maxLength": 120},
+    "sheetName": {"type": "string", "pattern": "^[A-Za-z0-9 _-]{1,50}$"}
+  }
+}

@@ -4,9 +4,9 @@ This repository contains the isolated workspace for Mira, the future OpenClaw Fi
 
 ## Current phase
 
-Phase F18 - WhatsApp Invoice Preparation and Issuance.
+Phase F19 - Customer Administration and Google Sheets Mirror.
 
-Mira is registered as an isolated OpenClaw agent and the dedicated RC Finance group routes only to her. F18 exposes narrow standalone invoice preparation and confirmation tools only to Ray in RC Finance. Exact customers, approved templates and bank profiles, dates, no-tax treatment, numbering initials, and integer minor-unit totals are bound into the draft before a one-use issuance token is created. F17A customer delivery and F17B verified-contact replies remain separately confirmation-gated. Broad messaging and execution tools remain denied.
+Mira is registered as an isolated OpenClaw agent and the dedicated RC Finance group routes only to her. F19 lets Ray list customer summaries and prepare confirmation-gated customer creation, modification, and deactivation. The private SQLite ledger remains authoritative, and an optional one-way Google Sheet mirror is written only to one explicitly configured Drive folder. F18 standalone invoice preparation and issuance, F17A customer delivery, and F17B verified-contact replies remain separately confirmation-gated. Broad messaging and execution tools remain denied.
 
 ## Workspace
 
@@ -51,11 +51,15 @@ npm run operations -- --admin --actor operator --action disk-audit
 npm run operations -- --admin --actor operator --action rotate-logs
 npm run operations -- --admin --actor operator --action cleanup-temp
 npm run registry -- currencies list
+npm run registry -- customer list --status active
+npm run customer-sheet -- --admin --actor operator --action sync
 npm run health
 npm test
 ```
 
-The foundation health check exits successfully when the F18 configuration is healthy. The separate Drive health check validates live access to the approved folder without printing its identity or folder ID. WhatsApp routing remains configured only for RC Finance. Mira's chat tool surface retains narrow confirmation tools while keeping broad messaging and execution denied.
+The foundation health check exits successfully when the F19 configuration is healthy. The separate Drive health check validates live access to the approved folder without printing its identity or folder ID. WhatsApp routing remains configured only for RC Finance. Mira's chat tool surface retains narrow confirmation tools while keeping broad messaging and execution denied.
+
+F19 customer creation, modification, and deactivation use a `CU-` preview token bound to Ray and RC Finance. Customer codes cannot be changed, and remove means deactivate. The Google Sheet is a one-way view of the private ledger; it never imports edits. Its private configuration is `config/customer-sheet-mirror.json`, and the spreadsheet ID and redacted synchronization history remain in SQLite.
 
 F18 standalone invoice preparation accepts exact structured facts from Ray, converts decimal price strings to integer minor units, and calculates totals and due dates deterministically. A draft receives no official number. Only the exact bound token can issue the immutable DOCX/PDF. Issuance does not send the document to a customer; delivery requires the separate F17A preview and confirmation flow.
 

@@ -1,0 +1,10 @@
+{
+  "$schema": "../schemas/customer-sheet-mirror.schema.json",
+  "schemaVersion": 1,
+  "enabled": false,
+  "identity": null,
+  "client": null,
+  "folderId": null,
+  "spreadsheetTitle": "Mira Customer Register",
+  "sheetName": "Customers"
+}

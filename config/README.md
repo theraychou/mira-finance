@@ -1,6 +1,6 @@
 # Configuration
 
-`foundation.json` is a non-secret Phase F18 project foundation record. It is not an OpenClaw agent configuration and does not enable any integration. `claim-categories.json` contains public-safe deterministic category mappings only.
+`foundation.json` is a non-secret Phase F19 project foundation record. It is not an OpenClaw agent configuration and does not enable any integration. `claim-categories.json` contains public-safe deterministic category mappings only.
 
 Customer, entity, currency, bank, tax, and claim records are stored in private SQLite ledgers. Bank, tax, and claim mutations require the local administrator CLI. Sensitive registry values and receipt originals must never be committed. Drive and WhatsApp routing configuration remain in ignored private files. The F11 pilot remains in a separate ignored ledger.
 
@@ -9,3 +9,5 @@ F17A customer delivery configuration is stored in ignored `config/customer-deliv
 F17B inbound customer configuration is stored in ignored `config/customer-inbound.json`. It remains disabled until the dedicated Gmail read/send authorization and a verified-contact pilot are complete. Unknown, ambiguous, attachment-bearing, or state-changing requests are escalated to RC Finance; they are never answered from model inference.
 
 F18 adds no private configuration. Its invoice plugin resolves only an exact active customer, derives the approved business entity from the currency's default bank profile, converts decimal price strings to integer minor units, and binds the numbering initials into the immutable draft before requesting confirmation.
+
+F19 customer Sheet configuration is stored in ignored `config/customer-sheet-mirror.json`. It names one dedicated Google identity and client profile plus one exact destination folder. The private ledger remains authoritative; the Sheet is a one-way mirror and is never an input to customer mutations. Spreadsheet and folder identifiers, customer data, OAuth credentials, and tokens must never be committed.

@@ -6,6 +6,7 @@ import {
   addCustomerAlias,
   createCustomer,
   deactivateCustomer,
+  listCustomers,
   lookupCustomer,
   updateCustomer
 } from './lib/customer-registry.mjs';
@@ -65,6 +66,12 @@ export async function runRegistryCommand({ databasePath = defaultDatabasePath } 
 
   if (registry === 'customer' && action === 'lookup') {
     return lookupCustomer({ databasePath, query: requireValue('--query') });
+  }
+  if (registry === 'customer' && action === 'list') {
+    const status = valueAfter('--status') ?? 'active';
+    const active = status === 'all' ? null : status === 'active' ? true : status === 'inactive' ? false : undefined;
+    if (active === undefined) throw new Error('--status must be active, inactive, or all.');
+    return listCustomers({ databasePath, active });
   }
   if (action === 'list') {
     const registryNames = {

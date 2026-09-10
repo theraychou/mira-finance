@@ -258,3 +258,12 @@ export function assessCustomerReadiness(customer, { currency, purchaseOrderNumbe
   if (currency && customer?.default_currency && currency !== customer.default_currency) issues.push('currency_mismatch');
   return { ready: issues.length === 0, issues };
 }
+
+export function listCustomers({ databasePath, active = true } = {}) {
+  if (![true, false, null].includes(active)) throw new TypeError('active must be true, false, or null.');
+  const database = openDatabase(databasePath, { readOnly: true });
+  try {
+    const where = active === null ? '' : ' WHERE active = ?';
+    return database.prepare(`SELECT * FROM customers${where} ORDER BY customer_code`).all(...(active === null ? [] : [active ? 1 : 0]));
+  } finally { database.close(); }
+}

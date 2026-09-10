@@ -32,6 +32,6 @@ This is the isolated repository and future workspace for OpenClaw Finance Agent 
 
 Before each phase: read the build specification and prior completion report, inspect relevant files, rerun the previous acceptance checks, inspect Git state, and back up anything that will change. Then implement only the current phase, run focused and regression tests, and provide the standard completion report.
 
-## Phase F18 status
+## Phase F19 status
 
-Mira remains isolated and only the dedicated `RC Finance` WhatsApp group routes finance commands to her. F18 permits Ray to prepare deterministic standalone no-tax invoice drafts and issue them only after exact-token confirmation. Invoice preparation resolves an exact active customer, approved currency template and bank profile, and integer minor-unit totals. Customer delivery remains a separate confirmation. F17B verified-contact reply boundaries remain unchanged. Broad messaging and execution tools remain denied.
+Mira remains isolated and only the dedicated `RC Finance` WhatsApp group routes finance commands to her. F19 permits Ray to list customer summaries and to create, modify, or deactivate customers only after exact-token confirmation. Remove always means deactivate; customer records are never hard-deleted. The private SQLite ledger remains authoritative. A separately authorised Google identity may maintain a one-way customer Sheet mirror in one explicitly configured Drive folder; the Sheet never writes back to the ledger. F18 invoice issuance, F17A delivery, and F17B verified-contact reply boundaries remain unchanged. Broad messaging and execution tools remain denied.
