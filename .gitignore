@@ -64,6 +64,7 @@ config/whatsapp-routing.json
 config/customer-delivery.json
 config/customer-inbound.json
 config/customer-sheet-mirror.json
+.runtime/
 templates/**/*.docx
 templates/**/*.dotx
 

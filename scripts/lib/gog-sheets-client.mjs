@@ -1,10 +1,13 @@
 import { execFile } from 'node:child_process';
+import { existsSync } from 'node:fs';
 import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { promisify } from 'node:util';
+import { repositoryRoot } from '../validate-config.mjs';
 
 const execFileAsync = promisify(execFile);
+const privateGogCommand = path.join(repositoryRoot, '.runtime', process.platform === 'win32' ? 'gog.exe' : 'gog');
 
 export class SheetsClientError extends Error {
   constructor(code, { transient = false } = {}) {
@@ -42,7 +45,13 @@ function driveMetadata(payload) {
   return { id: value.id, parents: Array.isArray(value.parents) ? value.parents : [], mimeType: value.mimeType ?? value.mime_type ?? null };
 }
 
-export function createGogSheetsClient({ identity, client, gogCommand = 'gog', timeoutMs = 120000, runner = execFileAsync }) {
+export function createGogSheetsClient({
+  identity,
+  client,
+  gogCommand = existsSync(privateGogCommand) ? privateGogCommand : 'gog',
+  timeoutMs = 120000,
+  runner = execFileAsync
+}) {
   if (typeof identity !== 'string' || !identity.includes('@')) throw new TypeError('Sheets identity is invalid.');
   if (typeof client !== 'string' || !client) throw new TypeError('Sheets client profile is required.');
   async function run(argumentsList) {
