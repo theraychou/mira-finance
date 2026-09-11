@@ -83,10 +83,6 @@ export function createGogSheetsClient({ identity, client, gogCommand = 'gog', ti
     async clearValues({ spreadsheetId, range }) { await run(['sheets', 'clear', spreadsheetId, range]); },
     async format({ spreadsheetId, range, format, fields }) {
       await run(['sheets', 'format', spreadsheetId, range, `--format-json=${JSON.stringify(format)}`, `--format-fields=${fields}`]);
-    },
-    async freeze({ spreadsheetId, rows, columns }) {
-      await run(['sheets', 'freeze', spreadsheetId, `--rows=${rows}`, `--cols=${columns}`]);
-    },
-    async autoResize({ spreadsheetId, range }) { await run(['sheets', 'resize-columns', spreadsheetId, range, '--auto']); }
+    }
   };
 }

@@ -130,8 +130,6 @@ export async function syncCustomerSheetMirror({ databasePath, configuration, cli
     await client.format({ spreadsheetId, range: `${tab}!A4:S4`,
       format: { textFormat: { bold: true, foregroundColor: { red: 1, green: 1, blue: 1 } }, backgroundColor: { red: 0.09, green: 0.21, blue: 0.36 } },
       fields: 'userEnteredFormat.textFormat,userEnteredFormat.backgroundColor' });
-    await client.freeze({ spreadsheetId, rows: 4, columns: 1 });
-    await client.autoResize({ spreadsheetId, range: `${tab}!A:S` });
     updateState(databasePath, { spreadsheetId, folderIdHash, sourceHash, rowCount: customers.length, status: 'SYNCED',
       result: 'SUCCEEDED', syncedAt: now, actor, now });
     return { status: 'SYNCED', rowCount: customers.length, spreadsheetUrl: `https://docs.google.com/spreadsheets/d/${spreadsheetId}` };
