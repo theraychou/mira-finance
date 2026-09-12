@@ -4,6 +4,7 @@
 npm run db:migrate
 npm run customer-folders -- --admin --actor operator
 npm run invoices:drive-only:migrate -- --admin --actor operator
+npm run invoices:pilot-copies:remove -- --admin
 npm run db:check
 npm run health
 npm test

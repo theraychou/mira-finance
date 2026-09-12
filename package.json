@@ -42,6 +42,7 @@
     "customer-sheet:configure": "node scripts/configure-customer-sheet-mirror.mjs",
     "customer-folders": "node scripts/customer-drive-folders.mjs",
     "invoices:drive-only:migrate": "node scripts/migrate-invoices-to-drive-only.mjs",
+    "invoices:pilot-copies:remove": "node scripts/remove-verified-pilot-invoice-copies.mjs",
     "test": "node --test tests/unit/*.test.mjs tests/integration/*.test.mjs tests/regression/*.test.mjs"
   },
   "dependencies": {
