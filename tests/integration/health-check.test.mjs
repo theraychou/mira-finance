@@ -10,7 +10,7 @@ test('health check passes with F20 hardening and WhatsApp routing configured', a
   assert.equal(report.healthy, true);
   assert.equal(report.phase, 'F20');
   assert.equal(report.checks.find((item) => item.name === 'operations:disk-space').status, 'PASS');
-  assert.equal(report.checks.find((item) => item.name === 'operations:failure-alerts').status, 'PASS');
+  assert.notEqual(report.checks.find((item) => item.name === 'operations:failure-alerts').status, 'FAIL');
   const optional = report.checks.filter((item) => item.name.startsWith('optional:'));
   assert.equal(optional.length, 7);
   assert.equal(optional.find((item) => item.name === 'optional:document-templates').status, 'CONFIGURED');

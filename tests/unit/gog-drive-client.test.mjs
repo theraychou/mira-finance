@@ -4,7 +4,7 @@ import { createGogDriveClient } from '../../scripts/lib/gog-drive-client.mjs';
 
 test('gog client restricts commands to Drive and uses non-interactive JSON output',async()=>{
   const calls=[];const runner=async(command,args)=>{calls.push({command,args});return{stdout:JSON.stringify({id:'TEST_FILE_ID',name:'sample.pdf',mimeType:'application/pdf',size:'42',parents:['TEST_FOLDER_ID']})};};
-  const client=createGogDriveClient({identity:'operator@example.invalid',client:'mira-drive',runner});
+  const client=createGogDriveClient({identity:'operator@example.invalid',client:'mira-drive',gogCommand:'gog',runner});
   const metadata=await client.uploadFile({localPath:'/tmp/sample.pdf',name:'sample.pdf',parentId:'TEST_FOLDER_ID'});
   assert.equal(metadata.size,42);assert.equal(calls.length,1);assert.equal(calls[0].command,'gog');
   assert.ok(calls[0].args.includes('--enable-commands=drive'));assert.ok(calls[0].args.includes('--no-input'));assert.ok(calls[0].args.includes('--json'));
