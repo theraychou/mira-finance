@@ -26,7 +26,7 @@ async function countFiles(root, extension) {
   for (const entry of await readdir(root, { withFileTypes: true })) {
     const candidate = path.join(root, entry.name);
     if (entry.isDirectory()) total += await countFiles(candidate, extension);
-    if (entry.isFile() && entry.name.toLowerCase().endsWith(extension)) total += 1;
+    if (entry.isFile() && !entry.name.startsWith('.') && entry.name.toLowerCase().endsWith(extension)) total += 1;
   }
   return total;
 }
@@ -117,7 +117,7 @@ export async function runHealthCheck({ root = repositoryRoot, env = process.env 
   let databaseStatus = 'NOT_CONFIGURED';
   if (databasePresent) {
     const databaseCheck = checkDatabase(path.join(root, 'data', 'finance.sqlite3'));
-    const schemaVersions = { F3: 1, F4: 2, F5: 3, F6: 4, F7: 5, F8: 6, F9: 6, F10: 6, F11: 6, F12: 7, F13: 8, F14: 9, F15: 10, F16: 10, F17A: 11, F17B: 12, F18: 12, F19: 13 };
+    const schemaVersions = { F3: 1, F4: 2, F5: 3, F6: 4, F7: 5, F8: 6, F9: 6, F10: 6, F11: 6, F12: 7, F13: 8, F14: 9, F15: 10, F16: 10, F17A: 11, F17B: 12, F18: 12, F19: 13, F20: 14 };
     const requiredSchemaVersion = schemaVersions[foundation.project.phase] ?? 1;
     const databaseReady = databaseCheck.ok && databaseCheck.schemaVersion >= requiredSchemaVersion;
     databaseStatus = databaseReady ? 'CONFIGURED' : 'FAIL';
@@ -158,6 +158,8 @@ export async function runHealthCheck({ root = repositoryRoot, env = process.env 
     driveConfigured = Boolean(env.MIRA_GOOGLE_IDENTITY && env.MIRA_DRIVE_ROOT_FOLDER_ID);
   }
   checks.push(check('optional:google-drive', driveConfigured ? 'CONFIGURED' : 'NOT_CONFIGURED', 'Phase F8'));
+  const localInvoiceFiles=await countFiles(path.join(root,'generated','invoices'),'');
+  checks.push(check('invoice-storage:server-copies',localInvoiceFiles===0?'PASS':'FAIL',localInvoiceFiles===0?'no persistent invoice files':'persistent invoice files require verified Drive migration'));
 
   if (!await exists(path.join(root, 'config', 'customer-sheet-mirror.json'))) {
     checks.push(check('optional:customer-sheet-mirror', 'PREPARED', 'Phase F19 private configuration pending'));

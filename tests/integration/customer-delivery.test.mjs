@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { openDatabase } from '../../scripts/lib/database.mjs';
@@ -134,4 +134,21 @@ test('WhatsApp delivery must be explicit, consent-bound, and hash verification f
     assert.equal(database.prepare('SELECT status FROM customer_delivery_requests WHERE id=?').get(prepared.requestId).status, 'FAILED');
     database.close();
   } finally { await cleanup(value); }
+});
+
+test('Drive-only invoice delivery downloads to RAM, verifies, sends, and removes staging',async()=>{
+  const value=await fixture();try{
+    const bytes=await readFile(value.pdfPath),fileId='TEST_DRIVE_PDF_ID';const database=openDatabase(value.databasePath);
+    database.prepare("UPDATE invoice_issuances SET storage_backend='DRIVE_ONLY',pdf_file_name=?,pdf_relative_path=NULL WHERE invoice_id=?").run(`${NUMBER}.pdf`,value.invoiceId);
+    database.prepare('UPDATE invoices SET drive_pdf_file_id=? WHERE id=?').run(fileId,value.invoiceId);database.close();await rm(value.pdfPath,{force:true});
+    const ramRoot=path.join(value.root,'ram');await mkdir(ramRoot,{recursive:true});const driveClient={
+      async getMetadata(id){assert.equal(id,fileId);return{id,name:`${NUMBER}.pdf`,mimeType:'application/pdf',parents:['TEST_FOLDER']};},
+      async downloadFile({fileId:id,outputPath}){assert.equal(id,fileId);await writeFile(outputPath,bytes,{mode:0o600});}
+    };
+    const contact=createDeliveryContact({databasePath:value.databasePath,actor:'test-admin',now:NOW,contact:{customer_id:value.customerId,channel:'EMAIL',destination:'drive@example.test'}});
+    const prepared=await prepareCustomerDelivery({databasePath:value.databasePath,root:value.root,configuration,driveClient,documentType:'invoice',documentNumber:NUMBER,contactId:contact.id,requestingUser:'whatsapp:test-ray',sourceChannel:'whatsapp',sourceChat:'group:test-rc-finance',now:NOW,tokenFactory:()=> 'DL-CCCCCCCCCCCCCCCC'});
+    let attachment;const emailClient={send:async(payload)=>{attachment=await readFile(payload.attachmentPath);return{providerReference:'TEST-DRIVE-DELIVERY'}}};
+    await confirmCustomerDelivery({databasePath:value.databasePath,root:value.root,configuration,driveClient,emailClient,ramRoot,allowNonRamTestStorage:true,token:prepared.token,confirmingUser:'whatsapp:test-ray',sourceChannel:'whatsapp',sourceChat:'group:test-rc-finance',now:LATER});
+    assert.deepEqual(attachment,bytes);assert.deepEqual(await readdir(ramRoot),[]);
+  }finally{await cleanup(value);}
 });

@@ -18,3 +18,10 @@ test('gog client classifies transient and authorization errors without returning
   const denied=createGogDriveClient({identity:'operator@example.invalid',client:'mira-drive',runner:async()=>{throw new Error('oauth2 invalid_grant secret detail');}});
   await assert.rejects(denied.getMetadata('TEST_FILE_ID'),error=>error.code==='DRIVE_AUTHORIZATION_FAILED'&&error.transient===false&&!error.message.includes('secret'));
 });
+
+test('gog client creates customer folders and downloads without enabling other command groups',async()=>{
+  const calls=[];const runner=async(_command,args)=>{calls.push(args);return{stdout:JSON.stringify(args.includes('mkdir')?{folder:{id:'TEST_FOLDER_ID',name:'TEST-CUSTOMER - TEST / NOT VALID',mimeType:'application/vnd.google-apps.folder',parents:['TEST_ROOT_ID']}}:{result:{id:'TEST_FILE_ID'}})};};
+  const client=createGogDriveClient({identity:'operator@example.invalid',client:'mira-drive',runner});
+  const folder=await client.createFolder({name:'TEST-CUSTOMER - TEST / NOT VALID',parentId:'TEST_ROOT_ID'});assert.equal(folder.id,'TEST_FOLDER_ID');
+  assert.deepEqual(calls[0].slice(-4),['drive','mkdir','TEST-CUSTOMER - TEST / NOT VALID','--parent=TEST_ROOT_ID']);assert.ok(calls[0].includes('--enable-commands=drive'));
+});

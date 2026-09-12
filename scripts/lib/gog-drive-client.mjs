@@ -1,5 +1,9 @@
 import { execFile } from 'node:child_process';
+import { existsSync } from 'node:fs';
+import { chmod } from 'node:fs/promises';
+import path from 'node:path';
 import { promisify } from 'node:util';
+import { repositoryRoot } from '../validate-config.mjs';
 
 const execFileAsync=promisify(execFile);
 
@@ -15,14 +19,16 @@ function classify(error){
   return new DriveClientError('DRIVE_COMMAND_FAILED');
 }
 
-function unwrap(payload){return payload?.file??payload?.result??payload;}
+const privateGogCommand=path.join(repositoryRoot,'.runtime',process.platform==='win32'?'gog.exe':'gog');
+
+function unwrap(payload){return payload?.file??payload?.folder??payload?.result??payload;}
 function metadata(payload){
   const value=unwrap(payload);
   if(!value||typeof value!=='object'||typeof value.id!=='string')throw new DriveClientError('DRIVE_RESPONSE_INVALID');
   return {id:value.id,name:value.name??null,mimeType:value.mimeType??value.mime_type??null,size:value.size==null?null:Number(value.size),parents:value.parents??[],md5Checksum:value.md5Checksum??value.md5_checksum??null,webViewLink:value.webViewLink??value.web_view_link??null};
 }
 
-export function createGogDriveClient({identity,client,gogCommand='gog',timeoutMs=120000,runner=execFileAsync}){
+export function createGogDriveClient({identity,client,gogCommand=existsSync(privateGogCommand)?privateGogCommand:'gog',timeoutMs=120000,runner=execFileAsync}){
   if(typeof identity!=='string'||!identity.includes('@'))throw new TypeError('Drive identity is invalid.');
   if(typeof client!=='string'||!client)throw new TypeError('Drive client profile is required.');
   async function run(argumentsList){
@@ -33,7 +39,9 @@ export function createGogDriveClient({identity,client,gogCommand='gog',timeoutMs
   }
   return {
     async getMetadata(fileId){return metadata(await run(['drive','get',fileId]));},
+    async createFolder({name,parentId}){return metadata(await run(['drive','mkdir',name,`--parent=${parentId}`]));},
     async uploadFile({localPath,name,parentId}){return metadata(await run(['drive','upload',localPath,`--name=${name}`,`--parent=${parentId}`]));},
+    async downloadFile({fileId,outputPath}){await run(['drive','download',fileId,`--out=${outputPath}`]);await chmod(outputPath,0o600);return outputPath;},
     async findByName({name,parentId}){
       const escaped=name.replaceAll("'","\\'");
       const payload=await run(['drive','ls',`--parent=${parentId}`,`--query=name = '${escaped}' and trashed = false`,'--max=20']);

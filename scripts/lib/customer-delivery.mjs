@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from 'node:crypto';
-import { lstat, readFile, realpath } from 'node:fs/promises';
+import { lstat, mkdtemp, readFile, realpath, rm, statfs } from 'node:fs/promises';
 import path from 'node:path';
 import { openDatabase, withImmediateTransaction } from './database.mjs';
 import { repositoryRoot } from '../validate-config.mjs';
@@ -144,7 +144,8 @@ function lookupDocument(database, documentType, documentNumber) {
   if (!definition) throw new TypeError('documentType must be quotation or invoice.');
   const row = database.prepare(`SELECT e.id,e.${definition.numberColumn} AS document_number,e.status,e.customer_id,e.currency,
     e.total_minor,e.${definition.dateColumn} AS relevant_date,c.active AS customer_active,c.legal_name,c.display_name,
-    i.status AS issuance_status,i.pdf_relative_path,i.pdf_sha256
+    i.status AS issuance_status,i.pdf_relative_path,i.pdf_sha256,
+    ${documentType==='invoice'?"i.storage_backend,i.pdf_file_name,e.drive_pdf_file_id":"'LOCAL' AS storage_backend,NULL AS pdf_file_name,NULL AS drive_pdf_file_id"}
     FROM ${definition.entityTable} e
     JOIN customers c ON c.id=e.customer_id
     JOIN ${definition.issuanceTable} i ON i.${definition.idColumn}=e.id
@@ -207,6 +208,14 @@ async function verifiedArtifact({ root, documentType, relativePath, expectedSha2
   return { absolutePath: resolvedCandidate, relativePath: relative.split(path.sep).join('/'), sha256: actualSha256 };
 }
 
+async function verifiedDriveArtifact({driveClient,fileId,fileName,expectedSha256,ramRoot='/dev/shm',allowNonRamTestStorage=false}){
+  if(!driveClient||typeof fileId!=='string'||!fileId||!/^[a-f0-9]{64}$/.test(expectedSha256??''))throw new Error('ISSUED_DRIVE_ARTIFACT_INVALID');
+  if(!allowNonRamTestStorage){if(process.platform!=='linux'||path.resolve(ramRoot)!=='/dev/shm')throw new Error('RAM_STAGING_REQUIRED');const info=await statfs(ramRoot);if(Number(info.type)!==0x01021994)throw new Error('RAM_STAGING_REQUIRED');}
+  const directory=await mkdtemp(path.join(path.resolve(ramRoot),'mira-delivery-'));const output=path.join(directory,fileName||'invoice.pdf');
+  try{await driveClient.downloadFile({fileId,outputPath:output});if(digest(await readFile(output))!==expectedSha256)throw new Error('ISSUED_ARTIFACT_HASH_MISMATCH');return {absolutePath:output,cleanup:()=>rm(directory,{recursive:true,force:true})};}
+  catch(error){await rm(directory,{recursive:true,force:true});throw error;}
+}
+
 export async function prepareCustomerDelivery({
   databasePath,
   documentType,
@@ -218,6 +227,7 @@ export async function prepareCustomerDelivery({
   sourceChat,
   sourceMessageReference = null,
   configuration,
+  driveClient,
   root = repositoryRoot,
   resendReason = null,
   now = new Date().toISOString(),
@@ -241,13 +251,18 @@ export async function prepareCustomerDelivery({
     document.customer_name = document.legal_name ?? document.display_name;
     contact = selectContact(database, document.customer_id, normalizedChannel, contactId);
   } finally { database.close(); }
-  const artifact = await verifiedArtifact({ root, documentType: normalizedType, relativePath: document.pdf_relative_path, expectedSha256: document.pdf_sha256 });
+  const driveOnly=normalizedType==='invoice'&&document.storage_backend==='DRIVE_ONLY';
+  const artifact=driveOnly
+    ? {relativePath:document.pdf_file_name,sha256:document.pdf_sha256,driveFileId:document.drive_pdf_file_id}
+    : await verifiedArtifact({root,documentType:normalizedType,relativePath:document.pdf_relative_path,expectedSha256:document.pdf_sha256});
+  if(driveOnly){if(!driveClient||!artifact.driveFileId)throw new Error('ISSUED_DRIVE_ARTIFACT_INVALID');await driveClient.getMetadata(artifact.driveFileId);}
   const message = messageFor(document, contact, configuration.signature);
   const snapshot = {
     documentType: normalizedType, documentId: document.id, documentNumber: document.document_number,
     customerId: document.customer_id, contactId: contact.id, channel: normalizedChannel,
     destination: contact.normalized_destination, verifiedAt: contact.verified_at, consentAt: contact.consent_at,
     artifactRelativePath: artifact.relativePath, artifactSha256: artifact.sha256,
+    artifactStorageBackend: driveOnly?'DRIVE_ONLY':'LOCAL',artifactDriveFileId:artifact.driveFileId??null,
     subject: message.subject, body: message.body
   };
   const hash = requestHash(snapshot);
@@ -266,10 +281,10 @@ export async function prepareCustomerDelivery({
         AND expires_at>? ORDER BY id DESC LIMIT 1`).get(normalizedType, document.id, contact.id, normalizedChannel, hash, now);
       if (pending) return { id: pending.id, token: pending.token, expiresAt: pending.expires_at, reused: true };
       const result = writeDatabase.prepare(`INSERT INTO customer_delivery_requests
-        (token,document_type,document_id,document_number,customer_id,contact_id,channel,artifact_relative_path,artifact_sha256,request_hash,
+        (token,document_type,document_id,document_number,customer_id,contact_id,channel,artifact_relative_path,artifact_sha256,artifact_storage_backend,artifact_drive_file_id,request_hash,
          subject,body,requesting_user,source_channel,source_chat,source_message_reference,status,expires_at,resend_reason,created_at,updated_at)
-        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?, 'PENDING',?,?,?,?)`).run(deliveryToken, normalizedType, document.id, document.document_number,
-        document.customer_id, contact.id, normalizedChannel, artifact.relativePath, artifact.sha256, hash, message.subject, message.body,
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,'PENDING',?,?,?,?)`).run(deliveryToken, normalizedType, document.id, document.document_number,
+        document.customer_id, contact.id, normalizedChannel, artifact.relativePath, artifact.sha256, driveOnly?'DRIVE_ONLY':'LOCAL',artifact.driveFileId??null,hash, message.subject, message.body,
         user, contextChannel, contextChat, sourceMessageReference, expiresAt, reason, now, now);
       const id = Number(result.lastInsertRowid);
       audit(writeDatabase, { now, actor: user, action: 'customer_delivery.requested', entityId: id,
@@ -314,6 +329,7 @@ function loadForConfirmation(database, tokenValue, context) {
     customerId: row.customer_id, contactId: row.contact_id, channel: row.channel,
     destination: row.normalized_destination, verifiedAt: row.current_verified_at, consentAt: row.current_consent_at,
     artifactRelativePath: row.artifact_relative_path, artifactSha256: row.artifact_sha256,
+    artifactStorageBackend:row.artifact_storage_backend,artifactDriveFileId:row.artifact_drive_file_id,
     subject: row.subject, body: row.body
   };
   if (requestHash(snapshot) !== row.request_hash) throw new Error('DELIVERY_REQUEST_CHANGED');
@@ -335,7 +351,10 @@ export async function confirmCustomerDelivery({
   configuration,
   emailClient,
   whatsAppClient,
+  driveClient,
   root = repositoryRoot,
+  ramRoot='/dev/shm',
+  allowNonRamTestStorage=false,
   now = new Date().toISOString()
 }) {
   isoInstant(now, 'now');
@@ -350,7 +369,9 @@ export async function confirmCustomerDelivery({
       const current = loadForConfirmation(database, value, context);
       if (current.expired) return current;
       const document = lookupDocument(database, current.document_type, current.document_number);
-      if (document.id !== current.document_id || document.pdf_sha256 !== current.artifact_sha256 || document.pdf_relative_path.split(path.sep).join('/') !== current.artifact_relative_path) throw new Error('DELIVERY_DOCUMENT_CHANGED');
+      const reference=document.storage_backend==='DRIVE_ONLY'?document.drive_pdf_file_id:document.pdf_relative_path?.split(path.sep).join('/');
+      const expected=current.artifact_storage_backend==='DRIVE_ONLY'?current.artifact_drive_file_id:current.artifact_relative_path;
+      if (document.id !== current.document_id || document.pdf_sha256 !== current.artifact_sha256 || reference!==expected) throw new Error('DELIVERY_DOCUMENT_CHANGED');
       database.prepare("UPDATE customer_delivery_requests SET status='SENDING',confirmed_by=?,confirmed_at=?,updated_at=? WHERE id=?")
         .run(user, now, now, current.id);
       audit(database, { now, actor: user, action: 'customer_delivery.confirmed', entityId: current.id,
@@ -359,9 +380,11 @@ export async function confirmCustomerDelivery({
     });
   } finally { database.close(); }
   if (row.expired) throw Object.assign(new Error('DELIVERY_TOKEN_EXPIRED'), { code: 'DELIVERY_TOKEN_EXPIRED' });
-  let delivery;
+  let delivery,artifact;
   try {
-    const artifact = await verifiedArtifact({ root, documentType: row.document_type, relativePath: row.artifact_relative_path, expectedSha256: row.artifact_sha256 });
+    artifact=row.artifact_storage_backend==='DRIVE_ONLY'
+      ? await verifiedDriveArtifact({driveClient,fileId:row.artifact_drive_file_id,fileName:row.artifact_relative_path,expectedSha256:row.artifact_sha256,ramRoot,allowNonRamTestStorage})
+      : await verifiedArtifact({root,documentType:row.document_type,relativePath:row.artifact_relative_path,expectedSha256:row.artifact_sha256});
     if (row.channel === 'EMAIL') {
       if (!configuration.email?.enabled || !emailClient) throw new Error('EMAIL_DELIVERY_DISABLED');
       delivery = await emailClient.send({ to: row.destination, subject: row.subject, body: row.body, attachmentPath: artifact.absolutePath });
@@ -382,7 +405,7 @@ export async function confirmCustomerDelivery({
       });
     } finally { failed.close(); }
     const failure = new Error(`CUSTOMER_DELIVERY_FAILED (${code})`); failure.code = code; throw failure;
-  }
+  } finally { await artifact?.cleanup?.(); }
   const providerReferenceHash = digest(requiredText(delivery?.providerReference, 'provider reference', 500));
   const succeeded = openDatabase(databasePath);
   try {

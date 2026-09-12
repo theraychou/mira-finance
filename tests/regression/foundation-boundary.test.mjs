@@ -13,7 +13,7 @@ async function exists(relative) {
   }
 }
 
-test('Phase F19 preserves approved integrations and adds narrow customer administration', async () => {
+test('Phase F20 preserves approved integrations and adds Drive-only invoice storage', async () => {
   const foundation = JSON.parse(await readFile(path.join(repositoryRoot, 'config/foundation.json'), 'utf8'));
   assert.deepEqual(foundation.features, {
     database: true,
@@ -27,13 +27,14 @@ test('Phase F19 preserves approved integrations and adds narrow customer adminis
     customerDelivery: true,
     customerInbound: true,
     customerAdministration: true,
-    customerSheetMirror: true
+    customerSheetMirror: true,
+    invoiceDriveOnlyStorage: true
   });
-  assert.equal(foundation.project.phase, 'F19');
+  assert.equal(foundation.project.phase, 'F20');
   assert.equal(foundation.operations.minimumFreeBytes, 268435456);
 });
 
-test('F19 retains all six templates and all thirteen reversible database migrations', async () => {
+test('F20 retains all six templates and all fourteen reversible database migrations', async () => {
   assert.equal(await exists('data/migrations/001_initial.up.sql'), true);
   assert.equal(await exists('data/migrations/001_initial.down.sql'), true);
   assert.equal(await exists('data/migrations/002_registries.up.sql'), true);
@@ -60,6 +61,8 @@ test('F19 retains all six templates and all thirteen reversible database migrati
   assert.equal(await exists('data/migrations/012_customer_inbound.down.sql'), true);
   assert.equal(await exists('data/migrations/013_customer_administration.up.sql'), true);
   assert.equal(await exists('data/migrations/013_customer_administration.down.sql'), true);
+  assert.equal(await exists('data/migrations/014_invoice_drive_only.up.sql'), true);
+  assert.equal(await exists('data/migrations/014_invoice_drive_only.down.sql'), true);
   assert.equal(await exists('schemas/quotation-draft.schema.json'), true);
   assert.equal(await exists('schemas/invoice-draft.schema.json'), true);
   assert.equal(await exists('schemas/drive-folders.schema.json'), true);
@@ -74,6 +77,8 @@ test('F19 retains all six templates and all thirteen reversible database migrati
   assert.equal(await exists('docs/phase-f18-operations.md'), true);
   assert.equal(await exists('docs/phase-f19-boundary.md'), true);
   assert.equal(await exists('docs/phase-f19-operations.md'), true);
+  assert.equal(await exists('docs/phase-f20-boundary.md'), true);
+  assert.equal(await exists('docs/phase-f20-operations.md'), true);
   assert.equal(await exists('docs/operations-guide.md'), true);
   assert.equal(await exists('docs/recovery-guide.md'), true);
   assert.equal(await exists('docs/security-guide.md'), true);

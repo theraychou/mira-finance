@@ -18,7 +18,7 @@ function tableNames(database) {
   `).all().map((row) => row.name);
 }
 
-export function logicalLedgerHash(databasePath, { tables: requestedTables = null } = {}) {
+export function logicalLedgerHash(databasePath, { tables: requestedTables = null, columnsByTable = null } = {}) {
   const database = openDatabase(databasePath, { readOnly: true });
   try {
     const hash = createHash('sha256');
@@ -27,8 +27,9 @@ export function logicalLedgerHash(databasePath, { tables: requestedTables = null
     for (const table of tables) {
       if (!/^[a-z][a-z0-9_]*$/.test(table)) throw new Error('Unexpected ledger table name.');
       if (!available.has(table)) throw new Error('Requested ledger table is missing.');
-      const columns = database.prepare(`PRAGMA table_info("${table}")`).all().map((row) => row.name);
-      const rows = database.prepare(`SELECT * FROM "${table}" ORDER BY rowid`).all();
+      const columns = columnsByTable?.get(table) ?? database.prepare(`PRAGMA table_info("${table}")`).all().map((row) => row.name);
+      const selection=columns.map((column)=>`"${column}"`).join(',');
+      const rows = database.prepare(`SELECT ${selection} FROM "${table}" ORDER BY rowid`).all();
       hash.update(canonicalJson({ table, columns, rows }));
     }
     return { hash: hash.digest('hex'), tableCount: tables.length };
@@ -40,16 +41,17 @@ export function logicalLedgerHash(databasePath, { tables: requestedTables = null
 export function verifyCommonLedgerEquivalence(leftPath, rightPath) {
   const leftDb = openDatabase(leftPath, { readOnly: true });
   const rightDb = openDatabase(rightPath, { readOnly: true });
-  let common;
+  let common,columnsByTable;
   try {
     const right = new Set(tableNames(rightDb));
     common = tableNames(leftDb).filter((name) => name !== 'schema_migrations' && right.has(name));
+    columnsByTable=new Map(common.map((table)=>{const rightColumns=new Set(rightDb.prepare(`PRAGMA table_info("${table}")`).all().map((row)=>row.name));return [table,leftDb.prepare(`PRAGMA table_info("${table}")`).all().map((row)=>row.name).filter((name)=>rightColumns.has(name))];}));
   } finally {
     leftDb.close();
     rightDb.close();
   }
-  const left = logicalLedgerHash(leftPath, { tables: common });
-  const right = logicalLedgerHash(rightPath, { tables: common });
+  const left = logicalLedgerHash(leftPath, { tables: common,columnsByTable });
+  const right = logicalLedgerHash(rightPath, { tables: common,columnsByTable });
   if (left.hash !== right.hash || left.tableCount !== right.tableCount) throw new Error('LEDGERS_DIFFER');
   return { hash: left.hash, tableCount: left.tableCount };
 }

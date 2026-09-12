@@ -4,9 +4,9 @@ This repository contains the isolated workspace for Mira, the future OpenClaw Fi
 
 ## Current phase
 
-Phase F19 - Customer Administration and Google Sheets Mirror.
+Phase F20 - Drive-only Customer Invoice Storage.
 
-Mira is registered as an isolated OpenClaw agent and the dedicated RC Finance group routes only to her. F19 lets Ray list customer summaries and prepare confirmation-gated customer creation, modification, and deactivation. The private SQLite ledger remains authoritative, and an optional one-way Google Sheet mirror is written only to one explicitly configured Drive folder. F18 standalone invoice preparation and issuance, F17A customer delivery, and F17B verified-contact replies remain separately confirmation-gated. Broad messaging and execution tools remain denied.
+Mira is registered as an isolated OpenClaw agent and the dedicated RC Finance group routes only to her. Confirmed invoice DOCX/PDF files are stored only in one stable customer folder beneath the approved `rc_finance` Google Drive folder. Production rendering and delivery use temporary RAM staging that is always removed; no final invoice copy remains on the server. The private SQLite ledger remains authoritative for numbering, hashes, Drive references, customers, confirmations, and audits. F19 administration and its one-way Sheet mirror remain active, and all delivery and messaging confirmation boundaries remain unchanged.
 
 ## Workspace
 
@@ -53,15 +53,17 @@ npm run operations -- --admin --actor operator --action cleanup-temp
 npm run registry -- currencies list
 npm run registry -- customer list --status active
 npm run customer-sheet -- --admin --actor operator --action sync
+npm run customer-folders -- --admin --actor operator
+npm run invoices:drive-only:migrate -- --admin --actor operator
 npm run health
 npm test
 ```
 
-The foundation health check exits successfully when the F19 configuration is healthy. The separate Drive health check validates live access to the approved folder without printing its identity or folder ID. WhatsApp routing remains configured only for RC Finance. Mira's chat tool surface retains narrow confirmation tools while keeping broad messaging and execution denied.
+The foundation health check exits successfully when the F20 configuration is healthy. The separate Drive health check validates live access to the approved folder without printing its identity or folder ID. WhatsApp routing remains configured only for RC Finance. Mira's chat tool surface retains narrow confirmation tools while keeping broad messaging and execution denied.
 
 F19 customer creation, modification, and deactivation use a `CU-` preview token bound to Ray and RC Finance. Customer codes cannot be changed, and remove means deactivate. The Google Sheet is a one-way view of the private ledger; it never imports edits. Its private configuration is `config/customer-sheet-mirror.json`, and the spreadsheet ID and redacted synchronization history remain in SQLite.
 
-F18 standalone invoice preparation accepts exact structured facts from Ray, converts decimal price strings to integer minor units, and calculates totals and due dates deterministically. A draft receives no official number. Only the exact bound token can issue the immutable DOCX/PDF. Issuance does not send the document to a customer; delivery requires the separate F17A preview and confirmation flow.
+F18 standalone invoice preparation accepts exact structured facts from Ray, converts decimal price strings to integer minor units, and calculates totals and due dates deterministically. A draft receives no official number. Only the exact bound token can issue the immutable DOCX/PDF. Under F20 both files are verified in the customer's Drive folder before issuance completes, with no persistent server copy. Issuance does not send the document to a customer; delivery requires the separate F17A preview and confirmation flow.
 
 F17A delivery contacts live only in the private ledger. A delivery token binds one issued PDF hash, verified contact, channel, requester, and RC Finance context for 15 minutes. The PDF is re-hashed immediately before sending. Provider references are stored only as hashes, and resends require a reason and another confirmation. The ignored `config/customer-delivery.json` controls activation; OAuth material remains outside the repository.
 

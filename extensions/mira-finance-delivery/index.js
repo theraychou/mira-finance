@@ -6,6 +6,8 @@ import { confirmCustomerDelivery, prepareCustomerDelivery } from '../../scripts/
 import { createGogGmailClient } from '../../scripts/lib/gog-gmail-client.mjs';
 import { createOpenClawWhatsAppClient } from '../../scripts/lib/openclaw-whatsapp-client.mjs';
 import { loadWhatsAppRoutingConfiguration } from '../../scripts/lib/whatsapp-routing.mjs';
+import { loadDriveConfiguration } from '../../scripts/lib/drive-configuration.mjs';
+import { createGogDriveClient } from '../../scripts/lib/gog-drive-client.mjs';
 
 function fingerprint(label, value) { return createHash('sha256').update(`${label}:${value}`).digest('hex').slice(0, 24); }
 
@@ -63,8 +65,8 @@ export default definePluginEntry({
         },
         async execute(_id, params) {
           try {
-            const [trusted, configuration] = await Promise.all([source(ctx), loadCustomerDeliveryConfig()]);
-            return result(await prepareCustomerDelivery({ databasePath: defaultDatabasePath, configuration, ...trusted,
+            const [trusted, configuration,driveConfiguration] = await Promise.all([source(ctx), loadCustomerDeliveryConfig(),loadDriveConfiguration()]);
+            return result(await prepareCustomerDelivery({ databasePath: defaultDatabasePath, configuration,driveClient:createGogDriveClient(driveConfiguration), ...trusted,
               documentType: params.documentType, documentNumber: params.documentNumber,
               channel: params.channel ?? configuration.defaultChannel, contactId: params.contactId ?? null, resendReason: params.resendReason ?? null }));
           } catch (error) { return result({ status: 'FAIL', code: safeFailure(error) }); }
@@ -76,8 +78,8 @@ export default definePluginEntry({
         parameters: { type: 'object', additionalProperties: false, required: ['token'], properties: { token: { type: 'string', pattern: '^DL-[A-F0-9]{16}$' } } },
         async execute(_id, params) {
           try {
-            const [trusted, configuration] = await Promise.all([source(ctx), loadCustomerDeliveryConfig()]);
-            return result(await confirmCustomerDelivery({ databasePath: defaultDatabasePath, configuration, ...clients(configuration),
+            const [trusted, configuration,driveConfiguration] = await Promise.all([source(ctx), loadCustomerDeliveryConfig(),loadDriveConfiguration()]);
+            return result(await confirmCustomerDelivery({ databasePath: defaultDatabasePath, configuration,driveClient:createGogDriveClient(driveConfiguration), ...clients(configuration),
               token: params.token, confirmingUser: trusted.actor, sourceChannel: trusted.sourceChannel, sourceChat: trusted.sourceChat }));
           } catch (error) { return result({ status: 'FAIL', code: safeFailure(error) }); }
         }

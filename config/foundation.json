@@ -4,7 +4,7 @@
   "project": {
     "agentId": "mira-finance",
     "displayName": "Mira",
-    "phase": "F19"
+    "phase": "F20"
   },
   "workspace": {
     "path": "/root/.workspaces/mira-finance",
@@ -22,7 +22,8 @@
     "customerDelivery": true,
     "customerInbound": true,
     "customerAdministration": true,
-    "customerSheetMirror": true
+    "customerSheetMirror": true,
+    "invoiceDriveOnlyStorage": true
   },
   "logging": {
     "directory": "logs",

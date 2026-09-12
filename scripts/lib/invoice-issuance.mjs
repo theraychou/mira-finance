@@ -1,5 +1,6 @@
 import path from 'node:path';
-import { rm } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
+import { mkdtemp, readFile, rm, stat, statfs } from 'node:fs/promises';
 import { openDatabase, withImmediateTransaction } from './database.mjs';
 import { allocateDocumentNumberInTransaction, updateDocumentNumberStatusInTransaction } from './numbering.mjs';
 import { canonicalJson } from './quotation-drafts.mjs';
@@ -7,6 +8,9 @@ import { renderConvertAndFile } from './quotation-renderer.mjs';
 import { renderInvoiceDocx } from './invoice-renderer.mjs';
 import { repositoryRoot } from '../validate-config.mjs';
 import { recordFailureAlert } from './runtime-safety.mjs';
+import { loadDriveConfiguration } from './drive-configuration.mjs';
+import { createGogDriveClient } from './gog-drive-client.mjs';
+import { ensureCustomerDriveFolder } from './customer-drive-folders.mjs';
 
 function text(value, name) { if (typeof value !== 'string' || !value.trim()) throw new TypeError(`${name} is required.`); return value.trim(); }
 function instant(value) { const date = new Date(value); if (typeof value !== 'string' || Number.isNaN(date.valueOf()) || date.toISOString() !== value) throw new TypeError('now must be an ISO-8601 UTC instant.'); }
@@ -76,7 +80,9 @@ function reserveRetry(database, { invoiceId, retryingUser, now }) {
   return { invoiceId, documentNumberId:row.document_number_id, documentNumber:row.invoice_number, snapshot:JSON.parse(row.snapshot_json), actor:retryingUser, attemptNumber };
 }
 
-function fail(databasePath, reservation, error, now) {
+const digest=(value)=>createHash('sha256').update(value).digest('hex');
+
+function fail(databasePath, reservation, error, now, driveAttempt=false) {
   const errorCode = code(error); const database = openDatabase(databasePath);
   try { withImmediateTransaction(database, () => {
     const current = database.prepare('SELECT status FROM invoice_issuances WHERE invoice_id=?').get(reservation.invoiceId);
@@ -85,6 +91,9 @@ function fail(databasePath, reservation, error, now) {
     database.prepare("UPDATE invoices SET status='ISSUE_FAILED' WHERE id=?").run(reservation.invoiceId);
     database.prepare("UPDATE invoice_issuances SET status='ISSUE_FAILED',last_error_code=?,updated_at=? WHERE invoice_id=?").run(errorCode,now,reservation.invoiceId);
     database.prepare(`INSERT INTO invoice_issuance_attempts (invoice_id,attempt_number,result,error_code,actor,occurred_at) VALUES (?,?,'FAILED',?,?,?)`).run(reservation.invoiceId,reservation.attemptNumber,errorCode,reservation.actor,now);
+    if(driveAttempt)database.prepare(`INSERT INTO invoice_drive_storage_attempts
+      (invoice_id,attempt_number,result,error_code,actor,occurred_at) VALUES (?,?,'FAILED',?,?,?)`)
+      .run(reservation.invoiceId,reservation.attemptNumber,errorCode,reservation.actor,now);
     audit(database,now,reservation.actor,'invoice.issuance_failed',reservation.invoiceId,'FAIL',{documentNumber:reservation.documentNumber,errorCode,attemptNumber:reservation.attemptNumber});
   }); } finally { database.close(); }
   return errorCode;
@@ -96,9 +105,12 @@ function succeed(databasePath, reservation, files, now) {
     const current = database.prepare('SELECT status FROM invoice_issuances WHERE invoice_id=?').get(reservation.invoiceId);
     if (!current || current.status !== 'GENERATING') throw new Error('ISSUANCE_STATE_CHANGED');
     updateDocumentNumberStatusInTransaction(database,{allocationId:reservation.documentNumberId,status:'ISSUED',entityId:reservation.invoiceId,now});
-    database.prepare(`UPDATE invoice_issuances SET status='ISSUED',docx_relative_path=?,pdf_relative_path=?,docx_sha256=?,pdf_sha256=?,issued_by=?,issued_at=?,updated_at=? WHERE invoice_id=?`)
-      .run(files.docxRelativePath,files.pdfRelativePath,files.docxSha256,files.pdfSha256,reservation.actor,now,now,reservation.invoiceId);
-    database.prepare("UPDATE invoices SET status='ISSUED',issued_at=?,document_hash=? WHERE id=?").run(now,files.pdfSha256,reservation.invoiceId);
+    database.prepare(`UPDATE invoice_issuances SET status='ISSUED',docx_relative_path=?,pdf_relative_path=?,docx_sha256=?,pdf_sha256=?,
+      storage_backend=?,drive_folder_id=?,docx_file_name=?,pdf_file_name=?,issued_by=?,issued_at=?,updated_at=? WHERE invoice_id=?`)
+      .run(files.docxRelativePath??null,files.pdfRelativePath??null,files.docxSha256,files.pdfSha256,files.storageBackend??'LOCAL',
+        files.driveFolderId??null,files.docxFileName??null,files.pdfFileName??null,reservation.actor,now,now,reservation.invoiceId);
+    database.prepare("UPDATE invoices SET status='ISSUED',issued_at=?,document_hash=?,drive_docx_file_id=?,drive_pdf_file_id=? WHERE id=?")
+      .run(now,files.pdfSha256,files.driveDocxFileId??null,files.drivePdfFileId??null,reservation.invoiceId);
     const linkedRecharges = database.prepare(`SELECT r.id FROM claim_recharges r
       JOIN claim_invoice_links l ON l.claim_recharge_id=r.id
       WHERE l.invoice_id=? AND r.status='APPROVED' ORDER BY r.id`).all(reservation.invoiceId);
@@ -112,32 +124,63 @@ function succeed(databasePath, reservation, files, now) {
     }
     database.prepare(`INSERT INTO invoice_issuance_attempts (invoice_id,attempt_number,result,docx_sha256,pdf_sha256,actor,occurred_at) VALUES (?,?,'SUCCEEDED',?,?,?,?)`)
       .run(reservation.invoiceId,reservation.attemptNumber,files.docxSha256,files.pdfSha256,reservation.actor,now);
-    audit(database,now,reservation.actor,'invoice.issued',reservation.invoiceId,'PASS',{documentNumber:reservation.documentNumber,docxSha256:files.docxSha256,pdfSha256:files.pdfSha256,attemptNumber:reservation.attemptNumber},files.pdfSha256);
-    return database.prepare(`SELECT ii.*,i.invoice_number,i.status AS invoice_status,i.payment_status,i.balance_due_minor FROM invoice_issuances ii JOIN invoices i ON i.id=ii.invoice_id WHERE ii.invoice_id=?`).get(reservation.invoiceId);
+    if(files.storageBackend==='DRIVE_ONLY')database.prepare(`INSERT INTO invoice_drive_storage_attempts
+      (invoice_id,attempt_number,result,folder_id_hash,docx_file_id_hash,pdf_file_id_hash,actor,occurred_at)
+      VALUES (?,?,'SUCCEEDED',?,?,?,?,?)`).run(reservation.invoiceId,reservation.attemptNumber,digest(files.driveFolderId),digest(files.driveDocxFileId),digest(files.drivePdfFileId),reservation.actor,now);
+    audit(database,now,reservation.actor,'invoice.issued',reservation.invoiceId,'PASS',{documentNumber:reservation.documentNumber,storageBackend:files.storageBackend??'LOCAL',docxSha256:files.docxSha256,pdfSha256:files.pdfSha256,attemptNumber:reservation.attemptNumber},files.pdfSha256);
+    return database.prepare(`SELECT ii.*,i.invoice_number,i.status AS invoice_status,i.payment_status,i.balance_due_minor,i.drive_docx_file_id,i.drive_pdf_file_id FROM invoice_issuances ii JOIN invoices i ON i.id=ii.invoice_id WHERE ii.invoice_id=?`).get(reservation.invoiceId);
   }); } finally { database.close(); }
 }
 
 export async function issueConfirmedInvoice({ databasePath,token,confirmingUser,sourceChannel,sourceChat,clientInitials,
-  root=repositoryRoot,outputRoot=path.join(repositoryRoot,'generated','invoices'),testMode=false,documentRenderer=renderInvoiceDocx,pdfConverter,pdfInspector,now=new Date().toISOString() }) {
+  root=repositoryRoot,outputRoot=path.join(repositoryRoot,'generated','invoices'),testMode=false,documentRenderer=renderInvoiceDocx,pdfConverter,pdfInspector,
+  driveConfiguration,driveClient,ramRoot='/dev/shm',allowNonRamTestStorage=false,now=new Date().toISOString() }) {
   instant(now); const args={token:text(token,'token'),confirmingUser:text(confirmingUser,'confirmingUser'),sourceChannel:text(sourceChannel,'sourceChannel'),sourceChat:text(sourceChat,'sourceChat'),clientInitials:text(clientInitials,'clientInitials'),now};
   const database=openDatabase(databasePath); let reservation;
   try { reservation=withImmediateTransaction(database,()=>reserve(database,args)); if(reservation.rejectedCode) throw new InvoiceIssuanceError(reservation.rejectedCode); }
   catch(error){ if(error instanceof InvoiceIssuanceError) throw error; throw new InvoiceIssuanceError(code(error)); } finally { database.close(); }
-  return executeReservedInvoice({databasePath,reservation,root,outputRoot,testMode,documentRenderer,pdfConverter,pdfInspector,now});
+  return executeReservedInvoice({databasePath,reservation,root,outputRoot,testMode,documentRenderer,pdfConverter,pdfInspector,driveConfiguration,driveClient,ramRoot,allowNonRamTestStorage,now});
 }
 
-async function executeReservedInvoice({databasePath,reservation,root,outputRoot,testMode,documentRenderer,pdfConverter,pdfInspector,now}) {
+async function verifiedDriveUpload({drive,localPath,name,parentId,sha256}){
+  const buffer=await readFile(localPath);if(digest(buffer)!==sha256)throw new Error('DRIVE_UPLOAD_SOURCE_HASH_MISMATCH');
+  const size=(await stat(localPath)).size;const md5=createHash('md5').update(buffer).digest('hex');
+  const matches=await drive.findByName({name,parentId});if(matches.length>1)throw new Error('DRIVE_UPLOAD_AMBIGUOUS');
+  const uploaded=matches[0]??await drive.uploadFile({localPath,name,parentId});
+  const remote=await drive.getMetadata(uploaded.id);
+  if(remote.name!==name||!remote.parents.includes(parentId)||remote.size!==size||(remote.md5Checksum&&remote.md5Checksum.toLowerCase()!==md5))throw new Error('DRIVE_UPLOAD_VERIFICATION_FAILED');
+  return remote;
+}
+
+async function driveOnlyFiles(args){
+  const {databasePath,reservation,root,documentRenderer,pdfConverter,pdfInspector,driveConfiguration,driveClient,ramRoot,allowNonRamTestStorage}=args;
+  if(!allowNonRamTestStorage){if(process.platform!=='linux'||path.resolve(ramRoot)!=='/dev/shm')throw new Error('RAM_STAGING_REQUIRED');const info=await statfs(ramRoot);if(Number(info.type)!==0x01021994)throw new Error('RAM_STAGING_REQUIRED');}
+  const configuration=driveConfiguration??await loadDriveConfiguration({root});const drive=driveClient??createGogDriveClient(configuration);
+  const stage=await mkdtemp(path.join(path.resolve(ramRoot),'mira-invoice-'));
+  try{
+    const folder=await ensureCustomerDriveFolder({databasePath,customerId:reservation.snapshot.customer.id,rootFolderId:configuration.rootFolderId,driveClient:drive,actor:reservation.actor});
+    const rendered=await renderConvertAndFile({root,outputRoot:path.join(stage,'output'),snapshot:reservation.snapshot,documentNumber:reservation.documentNumber,testMode:false,documentRenderer,pdfConverter,pdfInspector});
+    const docxFileName=`${reservation.documentNumber}.docx`,pdfFileName=`${reservation.documentNumber}.pdf`;
+    const docx=await verifiedDriveUpload({drive,localPath:rendered.docxPath,name:docxFileName,parentId:folder.folderId,sha256:rendered.docxSha256});
+    const pdf=await verifiedDriveUpload({drive,localPath:rendered.pdfPath,name:pdfFileName,parentId:folder.folderId,sha256:rendered.pdfSha256});
+    return {...rendered,docxRelativePath:null,pdfRelativePath:null,storageBackend:'DRIVE_ONLY',driveFolderId:folder.folderId,docxFileName,pdfFileName,driveDocxFileId:docx.id,drivePdfFileId:pdf.id};
+  }finally{await rm(stage,{recursive:true,force:true});}
+}
+
+async function executeReservedInvoice(args) {
+  const {databasePath,reservation,root,outputRoot,testMode,documentRenderer,pdfConverter,pdfInspector,now}=args;
   try {
-    const files=await renderConvertAndFile({root,outputRoot,snapshot:reservation.snapshot,documentNumber:reservation.documentNumber,testMode,documentRenderer,pdfConverter,pdfInspector});
+    const files=testMode?await renderConvertAndFile({root,outputRoot,snapshot:reservation.snapshot,documentNumber:reservation.documentNumber,testMode,documentRenderer,pdfConverter,pdfInspector}):await driveOnlyFiles(args);
     try { return succeed(databasePath,reservation,files,now); } catch(error) { if(files.docxCreated)await rm(files.docxPath,{force:true}); if(files.pdfCreated)await rm(files.pdfPath,{force:true}); throw error; }
-  } catch(error) { const errorCode=fail(databasePath,reservation,error,now);if(!testMode)await recordFailureAlert({root,code:errorCode,operation:'INVOICE_ISSUANCE',entityType:'invoice',entityId:reservation.invoiceId,now}).catch(()=>{});throw new InvoiceIssuanceError(errorCode); }
+  } catch(error) { const errorCode=fail(databasePath,reservation,error,now,!testMode);if(!testMode)await recordFailureAlert({root,code:errorCode,operation:'INVOICE_ISSUANCE',entityType:'invoice',entityId:reservation.invoiceId,now}).catch(()=>{});throw new InvoiceIssuanceError(errorCode); }
 }
 
 export async function retryInvoiceIssuance({ databasePath,invoiceId,retryingUser,
-  root=repositoryRoot,outputRoot=path.join(repositoryRoot,'generated','invoices'),testMode=false,documentRenderer=renderInvoiceDocx,pdfConverter,pdfInspector,now=new Date().toISOString() }) {
+  root=repositoryRoot,outputRoot=path.join(repositoryRoot,'generated','invoices'),testMode=false,documentRenderer=renderInvoiceDocx,pdfConverter,pdfInspector,
+  driveConfiguration,driveClient,ramRoot='/dev/shm',allowNonRamTestStorage=false,now=new Date().toISOString() }) {
   instant(now); if(!Number.isSafeInteger(invoiceId)||invoiceId<1)throw new TypeError('invoiceId must be a positive integer.');
   const user=text(retryingUser,'retryingUser'),database=openDatabase(databasePath);let reservation;
   try{reservation=withImmediateTransaction(database,()=>reserveRetry(database,{invoiceId,retryingUser:user,now}));}
   catch(error){throw new InvoiceIssuanceError(code(error));}finally{database.close();}
-  return executeReservedInvoice({databasePath,reservation,root,outputRoot,testMode,documentRenderer,pdfConverter,pdfInspector,now});
+  return executeReservedInvoice({databasePath,reservation,root,outputRoot,testMode,documentRenderer,pdfConverter,pdfInspector,driveConfiguration,driveClient,ramRoot,allowNonRamTestStorage,now});
 }

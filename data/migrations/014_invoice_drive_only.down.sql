@@ -1,0 +1,10 @@
+DROP TRIGGER invoice_drive_storage_attempts_no_delete;
+DROP TRIGGER invoice_drive_storage_attempts_no_update;
+DROP TABLE invoice_drive_storage_attempts;
+ALTER TABLE customer_delivery_requests DROP COLUMN artifact_drive_file_id;
+ALTER TABLE customer_delivery_requests DROP COLUMN artifact_storage_backend;
+ALTER TABLE invoice_issuances DROP COLUMN pdf_file_name;
+ALTER TABLE invoice_issuances DROP COLUMN docx_file_name;
+ALTER TABLE invoice_issuances DROP COLUMN drive_folder_id;
+ALTER TABLE invoice_issuances DROP COLUMN storage_backend;
+DROP TABLE customer_drive_folders;

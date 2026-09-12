@@ -1,9 +1,12 @@
 import { createHash } from 'node:crypto';
 import { definePluginEntry } from 'openclaw/plugin-sdk/plugin-entry';
-import { defaultDatabasePath } from '../../scripts/lib/database.mjs';
+import { defaultDatabasePath, openDatabase } from '../../scripts/lib/database.mjs';
 import { loadCustomerSheetMirrorConfiguration } from '../../scripts/lib/customer-sheet-mirror-config.mjs';
 import { syncCustomerSheetMirror } from '../../scripts/lib/customer-sheet-mirror.mjs';
 import { createGogSheetsClient } from '../../scripts/lib/gog-sheets-client.mjs';
+import { loadDriveConfiguration } from '../../scripts/lib/drive-configuration.mjs';
+import { createGogDriveClient } from '../../scripts/lib/gog-drive-client.mjs';
+import { ensureCustomerDriveFolder } from '../../scripts/lib/customer-drive-folders.mjs';
 import {
   confirmWhatsAppCustomerChange, listWhatsAppCustomers, prepareWhatsAppCustomerChange
 } from '../../scripts/lib/whatsapp-customers.mjs';
@@ -42,6 +45,14 @@ async function mirrorAfterChange(actor) {
     if (error?.code === 'ENOENT') return { status: 'NOT_CONFIGURED' };
     return { status: 'FAILED', errorCode: 'CUSTOMER_SHEET_SYNC_FAILED' };
   }
+}
+
+async function folderAfterChange(customerCode,actor){
+  try{const database=openDatabase(defaultDatabasePath,{readOnly:true});let customerId;try{customerId=database.prepare('SELECT id FROM customers WHERE customer_code=?').get(customerCode)?.id;}finally{database.close();}
+    const configuration=await loadDriveConfiguration();const client=createGogDriveClient(configuration);
+    const folder=await ensureCustomerDriveFolder({databasePath:defaultDatabasePath,customerId,rootFolderId:configuration.rootFolderId,driveClient:client,actor});
+    return {status:'READY',created:folder.created};
+  }catch{return {status:'FAILED',errorCode:'CUSTOMER_DRIVE_FOLDER_FAILED'};}
 }
 
 const nullableString = (maximum) => ({ anyOf: [{ type: 'string', minLength: 1, maxLength: maximum }, { type: 'null' }] });
@@ -108,7 +119,7 @@ export default definePluginEntry({
             const changed = confirmWhatsAppCustomerChange({ databasePath: defaultDatabasePath, token: params.token,
               confirmingUser: trusted.requestingUser, sourceChannel: trusted.sourceChannel, sourceChat: trusted.sourceChat });
             if (changed.rejectedCode) throw Object.assign(new Error(changed.rejectedCode), { code: changed.rejectedCode });
-            return result({ ...changed, mirror: await mirrorAfterChange(trusted.requestingUser) });
+            return result({ ...changed, driveFolder: await folderAfterChange(changed.customer.customerCode,trusted.requestingUser), mirror: await mirrorAfterChange(trusted.requestingUser) });
           }).catch((error) => result({ status: 'FAIL', code: safeFailure(error) }));
         }
       };

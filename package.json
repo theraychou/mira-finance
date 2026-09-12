@@ -40,6 +40,8 @@
     "registry": "node scripts/finance-registry.mjs",
     "customer-sheet": "node scripts/customer-sheet-mirror.mjs",
     "customer-sheet:configure": "node scripts/configure-customer-sheet-mirror.mjs",
+    "customer-folders": "node scripts/customer-drive-folders.mjs",
+    "invoices:drive-only:migrate": "node scripts/migrate-invoices-to-drive-only.mjs",
     "test": "node --test tests/unit/*.test.mjs tests/integration/*.test.mjs tests/regression/*.test.mjs"
   },
   "dependencies": {

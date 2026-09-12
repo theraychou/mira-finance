@@ -193,7 +193,8 @@ export function confirmWhatsAppInvoice({
       currency: reference.draft.snapshot.currency,
       total: formatMinorAmount(reference.draft.snapshot.totals.totalMinor, reference.draft.snapshot.currency, reference.minorUnits),
       dueDate: reference.draft.snapshot.dueDate,
-      pdfReady: Boolean(issued.pdf_relative_path),
+      pdfReady: Boolean(issued.pdf_relative_path || issued.drive_pdf_file_id),
+      storage: issued.storage_backend ?? 'LOCAL',
       customerDeliveryRequiresSeparateConfirmation: true
     }));
 }
