@@ -23,9 +23,11 @@ export async function ensureCustomerDriveFolder({databasePath,customerId,rootFol
   if(!customer)throw new Error('CUSTOMER_NOT_FOUND');
   if(mapping){const found=verify(await driveClient.getMetadata(mapping.folder_id),rootFolderId);return {customerId,folderId:found.id,folderName:mapping.folder_name,created:false};}
   const folderName=customerDriveFolderName(customer);
-  const matches=(await driveClient.findByName({name:folderName,parentId:rootFolderId})).filter((item)=>item.mimeType===FOLDER_MIME);
+  const found=await driveClient.findByName({name:folderName,parentId:rootFolderId});
+  const matches=(await Promise.all(found.map((item)=>driveClient.getMetadata(item.id)))).filter((item)=>item.mimeType===FOLDER_MIME&&item.parents.includes(rootFolderId));
   if(matches.length>1)throw new Error('CUSTOMER_DRIVE_FOLDER_AMBIGUOUS');
-  const folder=verify(matches[0]??await driveClient.createFolder({name:folderName,parentId:rootFolderId}),rootFolderId);
+  const candidate=matches[0]??await driveClient.createFolder({name:folderName,parentId:rootFolderId});
+  const folder=verify(await driveClient.getMetadata(candidate.id),rootFolderId);
   const write=openDatabase(databasePath);
   try{withImmediateTransaction(write,()=>write.prepare(`INSERT INTO customer_drive_folders
     (customer_id,folder_id,folder_name,root_folder_id_hash,created_by,created_at,updated_at) VALUES (?,?,?,?,?,?,?)`)
